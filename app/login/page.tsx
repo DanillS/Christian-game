@@ -6,7 +6,7 @@ import { motion } from 'framer-motion'
 import SnowAnimation from '@/components/SnowAnimation'
 import StarsBackground from '@/components/StarsBackground'
 
-const PASSWORD = 'christmas2024' // Пароль можно изменить здесь
+const PASSWORD = '1996' // Пароль можно изменить здесь
 
 export default function LoginPage() {
   const router = useRouter()
