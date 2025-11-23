@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import GuessFaceGame from './games/GuessFaceGame'
 import GuessMelodyGame from './games/GuessMelodyGame'
@@ -38,38 +38,52 @@ export default function RoundGame({
     }
   }, [roundId, difficulty])
 
-  const getAvailableQuestions = () => {
-    if (usedQuestions.length >= questions.length) {
-      // Все вопросы использованы, перемешиваем заново
-      setUsedQuestions([])
-      localStorage.removeItem(`used-${roundId}-${difficulty}`)
+  // Используем useMemo для вычисления доступных вопросов без побочных эффектов
+  const availableQuestions = useMemo(() => {
+    if (questions.length === 0) return []
+    
+    // Если все вопросы использованы, возвращаем все вопросы
+    if (usedQuestions.length >= questions.length && questions.length > 0) {
       return questions
     }
+    
     return questions.filter((_, index) => !usedQuestions.includes(index))
-  }
+  }, [questions, usedQuestions])
 
   const handleAnswer = (isCorrect: boolean) => {
     if (isCorrect) {
-      setScore(score + 10)
+      setScore(prev => prev + 10)
     }
     
-    const available = getAvailableQuestions()
-    const currentQuestion = available[currentIndex % available.length]
+    if (availableQuestions.length === 0 || questions.length === 0) return
+    
+    const currentQuestion = availableQuestions[currentIndex % availableQuestions.length]
     const originalIndex = questions.indexOf(currentQuestion)
+    
+    if (originalIndex === -1) return
     
     // Добавляем вопрос в использованные
     const newUsed = [...usedQuestions, originalIndex]
-    setUsedQuestions(newUsed)
-    localStorage.setItem(`used-${roundId}-${difficulty}`, JSON.stringify(newUsed))
     
-    // Переходим к следующему вопросу
-    const nextIndex = (currentIndex + 1) % available.length
-    setCurrentIndex(nextIndex)
-    onQuestionComplete(nextIndex)
+    // Если все вопросы использованы, сбрасываем список
+    if (newUsed.length >= questions.length) {
+      setUsedQuestions([])
+      localStorage.removeItem(`used-${roundId}-${difficulty}`)
+      setCurrentIndex(0)
+      onQuestionComplete(0)
+    } else {
+      setUsedQuestions(newUsed)
+      localStorage.setItem(`used-${roundId}-${difficulty}`, JSON.stringify(newUsed))
+      
+      // Переходим к следующему вопросу (сбрасываем индекс, так как список доступных вопросов изменится)
+      setCurrentIndex(0)
+      onQuestionComplete(0)
+    }
   }
 
-  const availableQuestions = getAvailableQuestions()
-  const currentQuestion = availableQuestions[currentIndex % availableQuestions.length]
+  const currentQuestion = availableQuestions.length > 0 
+    ? availableQuestions[currentIndex % availableQuestions.length] 
+    : null
 
   if (!currentQuestion) {
     return (
