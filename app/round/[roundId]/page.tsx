@@ -2,7 +2,6 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import DifficultySelector from '@/components/DifficultySelector'
 import RoundGame from '@/components/RoundGame'
 import SnowAnimation from '@/components/SnowAnimation'
 import StarsBackground from '@/components/StarsBackground'
@@ -11,70 +10,47 @@ export default function RoundPage() {
   const params = useParams()
   const router = useRouter()
   const roundId = params.roundId as string
-  const [difficulty, setDifficulty] = useState<string | null>(null)
+  const [difficulty] = useState<string>('medium') // Фиксированный уровень сложности
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
 
   useEffect(() => {
     // Загружаем сохраненный прогресс
-    const saved = localStorage.getItem(`progress-${roundId}`)
+    const saved = localStorage.getItem(`progress-${roundId}-${difficulty}`)
     if (saved) {
       const progress = JSON.parse(saved)
-      setDifficulty(progress.difficulty)
-      setCurrentQuestionIndex(progress.questionIndex)
+      setCurrentQuestionIndex(progress.questionIndex || 0)
     }
-  }, [roundId])
-
-  const handleDifficultySelect = (selectedDifficulty: string) => {
-    setDifficulty(selectedDifficulty)
-    // Сбрасываем прогресс при выборе нового уровня
-    const saved = localStorage.getItem(`progress-${roundId}-${selectedDifficulty}`)
-    if (saved) {
-      const progress = JSON.parse(saved)
-      setCurrentQuestionIndex(progress.questionIndex)
-    } else {
-      setCurrentQuestionIndex(0)
-    }
-  }
-
-  const handleBack = () => {
-    setDifficulty(null)
-  }
+  }, [roundId, difficulty])
 
   const handleQuestionComplete = (newIndex: number) => {
     setCurrentQuestionIndex(newIndex)
     // Сохраняем прогресс
-    if (difficulty) {
-      localStorage.setItem(
-        `progress-${roundId}-${difficulty}`,
-        JSON.stringify({ questionIndex: newIndex })
-      )
-      localStorage.setItem(
-        `progress-${roundId}`,
-        JSON.stringify({ difficulty, questionIndex: newIndex })
-      )
-    }
+    localStorage.setItem(
+      `progress-${roundId}-${difficulty}`,
+      JSON.stringify({ questionIndex: newIndex })
+    )
+  }
+
+  const handleBack = () => {
+    router.push('/')
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-900 via-blue-800 to-green-900 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-blue-900 via-blue-800 to-green-900 relative overflow-hidden flex items-center justify-center p-4">
       <StarsBackground />
       <SnowAnimation />
-      <div className="relative z-10 min-h-screen">
-        {!difficulty ? (
-          <DifficultySelector
-            roundId={roundId}
-            onSelect={handleDifficultySelect}
-            onBack={() => router.push('/')}
-          />
-        ) : (
-          <RoundGame
-            roundId={roundId}
-            difficulty={difficulty}
-            initialQuestionIndex={currentQuestionIndex}
-            onBack={handleBack}
-            onQuestionComplete={handleQuestionComplete}
-          />
-        )}
+      <div className="w-full max-w-md md:max-w-2xl lg:max-w-4xl">
+        <div className="bg-gray-900 rounded-[2.5rem] md:rounded-[3rem] p-4 md:p-6 shadow-2xl border-4 border-gray-800">
+          <div className="bg-gradient-to-b from-blue-900 via-blue-800 to-green-900 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden">
+            <RoundGame
+              roundId={roundId}
+              difficulty={difficulty}
+              initialQuestionIndex={currentQuestionIndex}
+              onBack={handleBack}
+              onQuestionComplete={handleQuestionComplete}
+            />
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -30,6 +30,12 @@ const rounds = [
     description: 'Узнай голос',
     icon: '/icons/guess-voice.png',
   },
+  {
+    id: 'calendar',
+    name: 'Календарь',
+    description: 'Угадай дату или день рождения',
+    icon: '/icons/calendar.png',
+  },
 ]
 
 export default function RoundSelector() {
@@ -37,16 +43,16 @@ export default function RoundSelector() {
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8 relative z-10">
+    <div className="min-h-[600px] md:min-h-[800px] flex flex-col items-center justify-center px-4 py-6 md:py-8 relative z-10">
       <motion.h1
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-4xl md:text-5xl font-bold text-white mb-8 text-center drop-shadow-lg"
+        className="text-2xl md:text-4xl font-bold text-white mb-4 md:mb-6 text-center drop-shadow-lg"
       >
         Рождественские Тайны
       </motion.h1>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl w-full">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 w-full">
         {rounds.map((round, index) => (
           <motion.div
             key={round.id}
@@ -55,11 +61,11 @@ export default function RoundSelector() {
             transition={{ delay: index * 0.1 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="bg-white/10 backdrop-blur-md rounded-2xl p-6 cursor-pointer border-2 border-yellow-400/30 hover:border-yellow-400/70 transition-all"
+            className="bg-white/10 backdrop-blur-md rounded-xl md:rounded-2xl p-3 md:p-6 cursor-pointer border-2 border-yellow-400/30 hover:border-yellow-400/70 transition-all"
             onClick={() => router.push(`/round/${round.id}`)}
           >
             <div className="flex flex-col items-center text-center">
-              <div className="w-24 h-24 md:w-32 md:h-32 bg-white/20 rounded-full flex items-center justify-center mb-4 relative overflow-hidden">
+              <div className="w-16 h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 bg-white/20 rounded-full flex items-center justify-center mb-2 md:mb-4 relative overflow-hidden">
                 {imageErrors[round.id] ? (
                   <span className="text-4xl">🎄</span>
                 ) : (
@@ -76,10 +82,10 @@ export default function RoundSelector() {
                   />
                 )}
               </div>
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
+              <h2 className="text-sm md:text-xl lg:text-2xl font-bold text-white mb-1 md:mb-2">
                 {round.name}
               </h2>
-              <p className="text-white/80 text-sm md:text-base">
+              <p className="text-white/80 text-xs md:text-sm">
                 {round.description}
               </p>
             </div>

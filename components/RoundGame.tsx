@@ -6,6 +6,7 @@ import GuessFaceGame from './games/GuessFaceGame'
 import GuessMelodyGame from './games/GuessMelodyGame'
 import BibleQuotesGame from './games/BibleQuotesGame'
 import GuessVoiceGame from './games/GuessVoiceGame'
+import CalendarGame from './games/CalendarGame'
 import { getRoundData } from '@/data/roundData'
 
 interface RoundGameProps {
@@ -125,24 +126,42 @@ export default function RoundGame({
             onAnswer={handleAnswer}
           />
         )
+      case 'calendar':
+        return (
+          <CalendarGame
+            question={currentQuestion}
+            onAnswer={handleAnswer}
+          />
+        )
       default:
         return null
     }
   }
 
+  const difficultyNames: Record<string, string> = {
+    easy: 'Легко',
+    medium: 'Средне',
+    hard: 'Тяжело',
+  }
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
-      <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
+    <div className="min-h-[600px] md:min-h-[800px] flex flex-col items-center justify-center px-4 py-6 md:py-8 relative">
+      <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-20">
         <motion.button
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           onClick={onBack}
-          className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg transition-all backdrop-blur-md"
+          className="bg-white/20 hover:bg-white/30 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg transition-all backdrop-blur-md text-sm md:text-base"
         >
           ← Назад
         </motion.button>
-        <div className="bg-white/20 backdrop-blur-md text-white px-4 py-2 rounded-lg">
-          Очки: <span className="font-bold">{score}</span>
+        <div className="flex gap-2 md:gap-4">
+          <div className="bg-white/20 backdrop-blur-md text-white px-3 py-2 md:px-4 md:py-2 rounded-lg text-sm md:text-base">
+            Очки: <span className="font-bold">{score}</span>
+          </div>
+          <div className="bg-white/20 backdrop-blur-md text-white px-3 py-2 md:px-4 md:py-2 rounded-lg text-sm md:text-base">
+            {difficultyNames[difficulty] || difficulty}
+          </div>
         </div>
       </div>
 
