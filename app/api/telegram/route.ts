@@ -279,7 +279,7 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
 }
 
 async function showMainMenu(chatId: number) {
-  await sendTelegramMessage(chatId, '📋 <b>Главное меню</b>\n\nВыберите действие:', getMainMenuKeyboard())
+  await sendTelegramMessage(chatId, '📋 Главное меню\n\nВыберите действие:', getMainMenuKeyboard())
 }
 
 async function startAddIcon(message: TelegramMessage) {
@@ -302,7 +302,7 @@ async function startAddFace(message: TelegramMessage) {
     step: 'options',
     data: { options: [], parts: ['nose', 'eyes', 'mouth', 'hands', 'full'], difficulty: 'medium' },
   })
-  await sendTelegramMessage(chatId, '👤 <b>Добавление вопроса "Угадай лицо"</b>\n\nВведите первый вариант ответа:')
+  await sendTelegramMessage(chatId, '👤 Добавление вопроса "Угадай лицо"\n\nВведите первый вариант ответа:')
 }
 
 async function startAddMelody(message: TelegramMessage) {
@@ -312,7 +312,7 @@ async function startAddMelody(message: TelegramMessage) {
   if (!userId) return
 
   userStates.set(userId, { type: 'add_melody', step: 'options', data: { options: [], difficulty: 'medium' } })
-  await sendTelegramMessage(chatId, '🎵 <b>Добавление вопроса "Угадай мелодию"</b>\n\nВведите первый вариант ответа:')
+  await sendTelegramMessage(chatId, '🎵 Добавление вопроса "Угадай мелодию"\n\nВведите первый вариант ответа:')
 }
 
 async function startAddVoice(message: TelegramMessage) {
@@ -322,7 +322,7 @@ async function startAddVoice(message: TelegramMessage) {
   if (!userId) return
 
   userStates.set(userId, { type: 'add_voice', step: 'options', data: { options: [], difficulty: 'medium' } })
-  await sendTelegramMessage(chatId, '🎤 <b>Добавление вопроса "Угадай голос"</b>\n\nВведите первый вариант ответа:')
+  await sendTelegramMessage(chatId, '🎤 Добавление вопроса "Угадай голос"\n\nВведите первый вариант ответа:')
 }
 
 async function startAddQuote(message: TelegramMessage) {
@@ -332,7 +332,7 @@ async function startAddQuote(message: TelegramMessage) {
   if (!userId) return
 
   userStates.set(userId, { type: 'add_quote', step: 'questionType', data: { difficulty: 'medium' } })
-  await sendTelegramMessage(chatId, '📖 <b>Добавление библейской цитаты</b>\n\nВыберите тип вопроса:', getQuestionTypeKeyboard('quote_type'))
+  await sendTelegramMessage(chatId, '📖 Добавление библейской цитаты\n\nВыберите тип вопроса:', getQuestionTypeKeyboard('quote_type'))
 }
 
 function getNextStep(type: string, currentStep: string): string {
@@ -405,13 +405,20 @@ async function handleStateStep(message: TelegramMessage, state: UserState) {
     return
   }
 
+  // Обработка файлов (проверяем после текстовых шагов)
   if (state.step === 'photo' && state.type === 'add_face') {
     const fileId = extractImageFileId(message)
     if (fileId) {
       state.data.fileId = fileId
       await finalizeQuestion(chatId, userId, state)
     } else {
-      await sendTelegramMessage(chatId, '❌ Прикрепите фотографию.')
+      // Если файл не найден, но есть текст - это может быть ошибка
+      const text = (message.text || message.caption || '').trim()
+      if (text) {
+        await sendTelegramMessage(chatId, '❌ На этом шаге нужна фотография, а не текст. Прикрепите фото.')
+      } else {
+        await sendTelegramMessage(chatId, '❌ Прикрепите фотографию.')
+      }
     }
     return
   }
@@ -422,7 +429,13 @@ async function handleStateStep(message: TelegramMessage, state: UserState) {
       state.data.fileId = fileInfo.file_id
       await finalizeQuestion(chatId, userId, state)
     } else {
-      await sendTelegramMessage(chatId, '❌ Прикрепите MP3 файл.')
+      // Если файл не найден, но есть текст - это может быть ошибка
+      const text = (message.text || message.caption || '').trim()
+      if (text) {
+        await sendTelegramMessage(chatId, '❌ На этом шаге нужен MP3 файл, а не текст. Прикрепите аудио.')
+      } else {
+        await sendTelegramMessage(chatId, '❌ Прикрепите MP3 файл.')
+      }
     }
     return
   }
@@ -432,7 +445,13 @@ async function handleStateStep(message: TelegramMessage, state: UserState) {
     if (fileId) {
       await finalizeIcon(chatId, userId, state, fileId)
     } else {
-      await sendTelegramMessage(chatId, '❌ Прикрепите PNG изображение.')
+      // Если файл не найден, но есть текст - это может быть ошибка
+      const text = (message.text || message.caption || '').trim()
+      if (text) {
+        await sendTelegramMessage(chatId, '❌ На этом шаге нужно изображение, а не текст. Прикрепите PNG.')
+      } else {
+        await sendTelegramMessage(chatId, '❌ Прикрепите PNG изображение.')
+      }
     }
     return
   }
@@ -1034,7 +1053,8 @@ async function sendTelegramMessage(
     const payload: any = {
       chat_id: chatId,
       text,
-      parse_mode: 'HTML',
+      // Убираем parse_mode, чтобы избежать ошибок парсинга HTML
+      // parse_mode: 'HTML',
     }
 
     if (keyboard) {
@@ -1184,9 +1204,9 @@ async function handleStatus(chatId: number) {
 }
 
 function getWelcomeText() {
-  return '👋 <b>Привет! Это админ-бот "Рождественские Тайны"</b>\n\n' +
+  return '👋 Привет! Это админ-бот "Рождественские Тайны"\n\n' +
     'Используйте кнопки ниже для навигации.\n' +
-    'Для входа отправьте: /login <пароль>'
+    'Для входа отправьте: /login пароль'
 }
 
 function getHelpText() {
