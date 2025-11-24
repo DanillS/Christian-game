@@ -24,6 +24,27 @@ function buildBaseHeaders() {
   return headers
 }
 
+// Перегрузки для правильной типизации
+export async function supabaseRestRequest<T = any>(
+  path: string,
+  options: {
+    method?: 'GET' | 'POST' | 'PATCH' | 'DELETE'
+    headers?: HeadersInit
+    body?: any
+    searchParams?: Record<string, string>
+    expect?: 'json' | 'text'
+  }
+): Promise<T>
+export async function supabaseRestRequest(
+  path: string,
+  options: {
+    method?: 'GET' | 'POST' | 'PATCH' | 'DELETE'
+    headers?: HeadersInit
+    body?: any
+    searchParams?: Record<string, string>
+    expect: 'void'
+  }
+): Promise<void>
 export async function supabaseRestRequest<T = any>(
   path: string,
   options: {
@@ -33,7 +54,7 @@ export async function supabaseRestRequest<T = any>(
     searchParams?: Record<string, string>
     expect?: 'json' | 'text' | 'void'
   } = {}
-): Promise<T extends 'void' ? void : T> {
+): Promise<T | void> {
   if (!isSupabaseEnabled()) {
     throw new Error('Supabase is not configured')
   }
@@ -72,15 +93,15 @@ export async function supabaseRestRequest<T = any>(
     throw new Error(`Supabase request failed (${response.status}): ${errorText}`)
   }
 
-  if (expect === 'json') {
-    return (await response.json()) as T
+  if (expect === 'void') {
+    return
   }
 
   if (expect === 'text') {
     return (await response.text()) as T
   }
 
-  return undefined as T
+  return (await response.json()) as T
 }
 
 export async function supabaseStorageUpload(
@@ -111,15 +132,18 @@ export async function supabaseStorageUpload(
     headers.set('x-upsert', 'true')
   }
 
+  // Преобразуем в Uint8Array для совместимости с fetch API
   const body =
     file instanceof ArrayBuffer
-      ? Buffer.from(file)
-      : file
+      ? new Uint8Array(file)
+      : file instanceof Buffer
+      ? new Uint8Array(file)
+      : new Uint8Array(file)
 
   const response = await fetch(url.toString(), {
     method: 'POST',
     headers,
-    body,
+    body: body as BodyInit,
     cache: 'no-store',
   })
 
@@ -140,10 +164,13 @@ async function vercelBlobUpload(
   const cleanPath = objectPath.replace(/^\//, '')
   const url = `https://blob.vercel-storage.com/${cleanPath}`
 
+  // Преобразуем в Uint8Array для совместимости с fetch API
   const body =
     file instanceof ArrayBuffer
-      ? Buffer.from(file)
-      : file
+      ? new Uint8Array(file)
+      : file instanceof Buffer
+      ? new Uint8Array(file)
+      : new Uint8Array(file)
 
   const headers = new Headers()
   headers.set('Authorization', `Bearer ${BLOB_READ_WRITE_TOKEN}`)
@@ -155,7 +182,7 @@ async function vercelBlobUpload(
   const response = await fetch(url, {
     method: 'PUT',
     headers,
-    body,
+    body: body as BodyInit,
     cache: 'no-store',
   })
 
