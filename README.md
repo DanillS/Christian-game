@@ -2,20 +2,6 @@
 
 Интерактивная христианская игра-викторина для празднования Рождества Христова.
 
-## Установка
-
-```bash
-npm install
-```
-
-## Запуск
-
-```bash
-npm run dev
-```
-
-Откройте [http://localhost:3000](http://localhost:3000) в браузере.
-
 ## Структура проекта
 
 - `app/` - страницы Next.js
@@ -26,25 +12,28 @@ npm run dev
   - `bibleQuotesData.ts` - вопросы для "Библейские Цитаты"
   - `guessVoiceData.ts` - вопросы для "Угадай, Кто Говорит"
 
-## Добавление контента
-
 ### Иконки раундов
-Поместите иконки в папку `public/icons/`:
-- `guess-face.png`
-- `guess-melody.png`
-- `bible-quotes.png`
-- `guess-voice.png`
+Поместите 4 PNG изображения в папку `public/icons/`:
+- `guess-face.png` - для раунда "Угадай Лицо"
+- `guess-melody.png` - для раунда "Угадай Мелодию"
+- `bible-quotes.png` - для раунда "Библейские Цитаты"
+- `guess-voice.png` - для раунда "Угадай, Кто Говорит"
 
 ### Фотографии для "Угадай Лицо"
-Поместите фотографии в `public/images/faces/` и укажите пути в `data/guessFaceData.ts`
+1. Поместите фотографии в `public/images/faces/`
+2. Откройте `data/guessFaceData.ts`
+3. Добавьте вопросы с путями к фотографиям
 
-### Аудиофайлы
-- Мелодии: `public/audio/melodies/`
-- Голоса: `public/audio/voices/`
+### Аудиофайлы для "Угадай Мелодию"
+1. Поместите MP3 файлы в `public/audio/melodies/`
+2. Откройте `data/guessMelodyData.ts`
+3. Добавьте вопросы с путями к аудиофайлам
 
-## Деплой на Vercel
+### Аудиофайлы для "Угадай, Кто Говорит"
+1. Поместите MP3 файлы в `public/audio/voices/`
+2. Откройте `data/guessVoiceData.ts`
+3. Добавьте вопросы с путями к аудиофайлам
 
-1. Подключите репозиторий к Vercel
-2. Vercel автоматически определит Next.js проект
-3. Нажмите Deploy
+### Библейские цитаты
+Откройте `data/bibleQuotesData.ts` и добавьте свои вопросы
 
