@@ -263,20 +263,7 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
     return
   }
 
-  // Обработка выбора сложности
-  if (data.includes('_difficulty_')) {
-    const parts = data.split('_difficulty_')
-    if (parts.length === 2) {
-      const difficulty = parts[1]
-      const state = userStates.get(userId)
-      if (state) {
-        state.data.difficulty = difficulty
-        state.step = getNextStep(state.type, 'difficulty')
-        await processStateStep(chatId, userId, state)
-      }
-    }
-    return
-  }
+  // Убрана обработка выбора сложности - теперь всегда используется 'medium'
 
   // Обработка типа вопроса для цитат
   if (data.includes('_type_')) {
@@ -312,10 +299,10 @@ async function startAddFace(message: TelegramMessage) {
 
   userStates.set(userId, {
     type: 'add_face',
-    step: 'difficulty',
-    data: { options: [], parts: ['nose', 'eyes', 'mouth', 'hands', 'full'] },
+    step: 'options',
+    data: { options: [], parts: ['nose', 'eyes', 'mouth', 'hands', 'full'], difficulty: 'medium' },
   })
-  await sendTelegramMessage(chatId, '👤 <b>Добавление вопроса "Угадай лицо"</b>\n\nВыберите сложность:', getDifficultyKeyboard('face_difficulty'))
+  await sendTelegramMessage(chatId, '👤 <b>Добавление вопроса "Угадай лицо"</b>\n\nВведите первый вариант ответа:')
 }
 
 async function startAddMelody(message: TelegramMessage) {
@@ -324,8 +311,8 @@ async function startAddMelody(message: TelegramMessage) {
   const chatId = message.chat.id
   if (!userId) return
 
-  userStates.set(userId, { type: 'add_melody', step: 'difficulty', data: { options: [] } })
-  await sendTelegramMessage(chatId, '🎵 <b>Добавление вопроса "Угадай мелодию"</b>\n\nВыберите сложность:', getDifficultyKeyboard('melody_difficulty'))
+  userStates.set(userId, { type: 'add_melody', step: 'options', data: { options: [], difficulty: 'medium' } })
+  await sendTelegramMessage(chatId, '🎵 <b>Добавление вопроса "Угадай мелодию"</b>\n\nВведите первый вариант ответа:')
 }
 
 async function startAddVoice(message: TelegramMessage) {
@@ -334,8 +321,8 @@ async function startAddVoice(message: TelegramMessage) {
   const chatId = message.chat.id
   if (!userId) return
 
-  userStates.set(userId, { type: 'add_voice', step: 'difficulty', data: { options: [] } })
-  await sendTelegramMessage(chatId, '🎤 <b>Добавление вопроса "Угадай голос"</b>\n\nВыберите сложность:', getDifficultyKeyboard('voice_difficulty'))
+  userStates.set(userId, { type: 'add_voice', step: 'options', data: { options: [], difficulty: 'medium' } })
+  await sendTelegramMessage(chatId, '🎤 <b>Добавление вопроса "Угадай голос"</b>\n\nВведите первый вариант ответа:')
 }
 
 async function startAddQuote(message: TelegramMessage) {
@@ -344,27 +331,23 @@ async function startAddQuote(message: TelegramMessage) {
   const chatId = message.chat.id
   if (!userId) return
 
-  userStates.set(userId, { type: 'add_quote', step: 'difficulty', data: {} })
-  await sendTelegramMessage(chatId, '📖 <b>Добавление библейской цитаты</b>\n\nВыберите сложность:', getDifficultyKeyboard('quote_difficulty'))
+  userStates.set(userId, { type: 'add_quote', step: 'questionType', data: { difficulty: 'medium' } })
+  await sendTelegramMessage(chatId, '📖 <b>Добавление библейской цитаты</b>\n\nВыберите тип вопроса:', getQuestionTypeKeyboard('quote_type'))
 }
 
 function getNextStep(type: string, currentStep: string): string {
   const flows: Record<string, Record<string, string>> = {
     add_face: {
-      difficulty: 'options',
       options: 'correctAnswer',
       correctAnswer: 'photo',
     },
     add_melody: {
-      difficulty: 'options',
       options: 'audio',
     },
     add_voice: {
-      difficulty: 'options',
       options: 'audio',
     },
     add_quote: {
-      difficulty: 'questionType',
       questionType: 'quote',
       quote: 'options',
       options: 'correctAnswer',
@@ -555,7 +538,7 @@ async function saveFaceQuestion(chatId: number, state: UserState) {
     },
   })
 
-  await sendTelegramMessage(chatId, `✅ Вопрос "Угадай лицо" (${state.data.difficulty}) успешно добавлен!`, getMainMenuKeyboard())
+  await sendTelegramMessage(chatId, `✅ Вопрос "Угадай лицо" успешно добавлен!`, getMainMenuKeyboard())
 }
 
 async function saveMelodyQuestion(chatId: number, state: UserState) {
@@ -578,7 +561,7 @@ async function saveMelodyQuestion(chatId: number, state: UserState) {
     },
   })
 
-  await sendTelegramMessage(chatId, `✅ Вопрос "Угадай мелодию" (${state.data.difficulty}) успешно добавлен!`, getMainMenuKeyboard())
+  await sendTelegramMessage(chatId, `✅ Вопрос "Угадай мелодию" успешно добавлен!`, getMainMenuKeyboard())
 }
 
 async function saveVoiceQuestion(chatId: number, state: UserState) {
@@ -601,7 +584,7 @@ async function saveVoiceQuestion(chatId: number, state: UserState) {
     },
   })
 
-  await sendTelegramMessage(chatId, `✅ Вопрос "Угадай голос" (${state.data.difficulty}) успешно добавлен!`, getMainMenuKeyboard())
+  await sendTelegramMessage(chatId, `✅ Вопрос "Угадай голос" успешно добавлен!`, getMainMenuKeyboard())
 }
 
 async function saveQuoteQuestion(chatId: number, state: UserState) {
@@ -617,7 +600,7 @@ async function saveQuoteQuestion(chatId: number, state: UserState) {
     },
   })
 
-  await sendTelegramMessage(chatId, `✅ Библейская цитата (${state.data.difficulty}) успешно добавлена!`, getMainMenuKeyboard())
+  await sendTelegramMessage(chatId, `✅ Библейская цитата успешно добавлена!`, getMainMenuKeyboard())
 }
 
 async function handleLogin(message: TelegramMessage, payload: string) {
@@ -813,9 +796,14 @@ async function handleAddFace(message: TelegramMessage, payload: string) {
   const data = await parseJsonPayload(payload, chatId)
   if (!data) return
 
+  // Используем 'medium' по умолчанию, если difficulty не указан
+  if (!data.difficulty) {
+    data.difficulty = 'medium'
+  }
+  
   if (!['easy', 'medium', 'hard'].includes(data.difficulty)) {
-    await sendTelegramMessage(chatId, 'difficulty должен быть easy|medium|hard.')
-    return
+    await sendTelegramMessage(chatId, 'difficulty должен быть easy|medium|hard. Используется medium по умолчанию.')
+    data.difficulty = 'medium'
   }
 
   if (!Array.isArray(data.options) || data.options.length < 2) {
@@ -878,9 +866,14 @@ async function handleAddAudio(
   const data = await parseJsonPayload(payload, chatId)
   if (!data) return
 
+  // Используем 'medium' по умолчанию, если difficulty не указан
+  if (!data.difficulty) {
+    data.difficulty = 'medium'
+  }
+  
   if (!['easy', 'medium', 'hard'].includes(data.difficulty)) {
-    await sendTelegramMessage(chatId, 'difficulty должен быть easy|medium|hard.')
-    return
+    await sendTelegramMessage(chatId, 'difficulty должен быть easy|medium|hard. Используется medium по умолчанию.')
+    data.difficulty = 'medium'
   }
 
   if (!Array.isArray(data.options) || data.options.length < 2) {
@@ -927,9 +920,14 @@ async function handleAddQuote(message: TelegramMessage, payload: string) {
   const data = await parseJsonPayload(payload, chatId)
   if (!data) return
 
+  // Используем 'medium' по умолчанию, если difficulty не указан
+  if (!data.difficulty) {
+    data.difficulty = 'medium'
+  }
+  
   if (!['easy', 'medium', 'hard'].includes(data.difficulty)) {
-    await sendTelegramMessage(chatId, 'difficulty должен быть easy|medium|hard.')
-    return
+    await sendTelegramMessage(chatId, 'difficulty должен быть easy|medium|hard. Используется medium по умолчанию.')
+    data.difficulty = 'medium'
   }
 
   if (!data.quote || !data.questionType || !Array.isArray(data.options)) {
@@ -1089,18 +1087,7 @@ function getMainMenuKeyboard() {
   }
 }
 
-function getDifficultyKeyboard(callbackPrefix: string) {
-  return {
-    inline_keyboard: [
-      [
-        { text: '😊 Легко', callback_data: `${callbackPrefix}_easy` },
-        { text: '🤔 Средне', callback_data: `${callbackPrefix}_medium` },
-        { text: '😤 Тяжело', callback_data: `${callbackPrefix}_hard` },
-      ],
-      [{ text: '❌ Отмена', callback_data: 'cancel' }],
-    ],
-  }
-}
+// Функция getDifficultyKeyboard удалена - сложность больше не выбирается
 
 function getQuestionTypeKeyboard(callbackPrefix: string) {
   return {
