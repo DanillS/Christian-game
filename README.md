@@ -24,9 +24,11 @@ TELEGRAM_ADMIN_PASSWORD=
 TELEGRAM_SECRET_TOKEN=       # секрет для вебхука (опционально)
 ```
 
-**Приоритет хранилища:** Если задан `BLOB_READ_WRITE_TOKEN`, используется Vercel Blob Storage. Иначе — Supabase Storage (если настроен).
+**Важно:** Для работы Telegram-бота **обязательно нужна база данных Supabase** (для хранения сессий и вопросов). Vercel Blob Storage используется только для файлов (иконки, фото, аудио).
 
-Если Supabase или Telegram не настроены, приложение продолжит работать на статических файлах из `public/` и `data/*.ts`.
+**Приоритет хранилища файлов:** Если задан `BLOB_READ_WRITE_TOKEN`, используется Vercel Blob Storage. Иначе — Supabase Storage (если настроен).
+
+Если Supabase или Telegram не настроены, приложение продолжит работать на статических файлах из `public/` и `data/*.ts`, но бот работать не будет.
 
 ## Supabase
 

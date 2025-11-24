@@ -162,7 +162,16 @@ async function handleLogin(message: TelegramMessage, payload: string) {
   }
 
   if (!isSupabaseEnabled()) {
-    await sendTelegramMessage(chatId, 'База данных недоступна. Используйте локальные файлы.')
+    await sendTelegramMessage(
+      chatId,
+      '❌ База данных Supabase не настроена.\n\n' +
+        'Для работы бота нужна база данных Supabase (для хранения сессий и вопросов).\n' +
+        'Vercel Blob Storage используется только для файлов (иконки, фото, аудио).\n\n' +
+        'Настройте переменные окружения:\n' +
+        '- SUPABASE_URL\n' +
+        '- SUPABASE_ANON_KEY или SUPABASE_SERVICE_ROLE_KEY\n\n' +
+        'Проверьте статус: /status'
+    )
     return
   }
 
@@ -212,7 +221,10 @@ async function handleLogout(message: TelegramMessage) {
   }
 
   if (!isSupabaseEnabled()) {
-    await sendTelegramMessage(chatId, 'База данных недоступна. Используйте локальные файлы.')
+    await sendTelegramMessage(
+      chatId,
+      '❌ База данных Supabase не настроена. Настройте SUPABASE_URL и ключи.'
+    )
     return
   }
 
@@ -233,7 +245,10 @@ async function ensureAuthorized(message: TelegramMessage) {
   }
 
   if (!isSupabaseEnabled()) {
-    await sendTelegramMessage(chatId, 'База данных недоступна. Используйте локальные файлы.')
+    await sendTelegramMessage(
+      chatId,
+      '❌ База данных Supabase не настроена. Настройте SUPABASE_URL и ключи для работы бота.'
+    )
     return false
   }
 
@@ -550,17 +565,28 @@ async function sendTelegramMessage(chatId: number, text: string) {
 }
 
 async function handleStatus(chatId: number) {
+  const supabaseOk = isSupabaseEnabled()
+  const blobOk = isVercelBlobEnabled()
+  
   const status = [
     '📊 Статус системы:',
     '',
-    `✅ Telegram бот: ${TELEGRAM_BOT_TOKEN ? 'настроен' : 'не настроен'}`,
-    `✅ Supabase: ${isSupabaseEnabled() ? 'настроен' : 'не настроен'}`,
-    `✅ Vercel Blob: ${isVercelBlobEnabled() ? 'настроен' : 'не настроен'}`,
-    `✅ Пароль админа: ${TELEGRAM_ADMIN_PASSWORD ? 'задан' : 'не задан'}`,
+    `✅ Telegram бот: ${TELEGRAM_BOT_TOKEN ? 'настроен' : '❌ не настроен'}`,
+    `✅ Supabase (БД): ${supabaseOk ? 'настроен' : '❌ не настроен'}`,
+    `   ${supabaseOk ? '' : '   Нужны: SUPABASE_URL + ключи'}`,
+    `✅ Vercel Blob (файлы): ${blobOk ? 'настроен' : '❌ не настроен'}`,
+    `   ${blobOk ? '' : '   Нужен: BLOB_READ_WRITE_TOKEN'}`,
+    `✅ Пароль админа: ${TELEGRAM_ADMIN_PASSWORD ? 'задан' : '❌ не задан'}`,
     '',
-    isSupabaseEnabled() || isVercelBlobEnabled()
-      ? '💾 Хранилище файлов доступно'
-      : '⚠️ Хранилище не настроено, будут использоваться локальные файлы',
+    supabaseOk
+      ? '✅ Бот готов к работе'
+      : '❌ Для работы бота нужна база данных Supabase',
+    '',
+    blobOk
+      ? '💾 Файлы будут сохраняться в Vercel Blob'
+      : supabaseOk
+      ? '💾 Файлы будут сохраняться в Supabase Storage'
+      : '⚠️ Хранилище не настроено',
   ].join('\n')
   await sendTelegramMessage(chatId, status)
 }
