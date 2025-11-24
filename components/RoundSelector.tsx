@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 const rounds = [
   {
@@ -41,6 +41,30 @@ const rounds = [
 export default function RoundSelector() {
   const router = useRouter()
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
+  const [customIcons, setCustomIcons] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    let ignore = false
+
+    const loadIcons = async () => {
+      try {
+        const response = await fetch('/api/round-icons')
+        if (!response.ok) return
+        const payload = await response.json()
+        if (!ignore && payload?.icons) {
+          setCustomIcons(payload.icons)
+        }
+      } catch (error) {
+        console.error('[RoundSelector] Не удалось загрузить иконки', error)
+      }
+    }
+
+    loadIcons()
+
+    return () => {
+      ignore = true
+    }
+  }, [])
 
   return (
     <div className="min-h-[600px] md:min-h-[800px] flex flex-col items-center justify-center px-4 py-6 md:py-8 relative z-10">
@@ -70,7 +94,7 @@ export default function RoundSelector() {
                   <span className="text-4xl">🎄</span>
                 ) : (
                   <Image
-                    src={round.icon}
+                    src={customIcons[round.id] || round.icon}
                     alt={round.name}
                     width={80}
                     height={80}

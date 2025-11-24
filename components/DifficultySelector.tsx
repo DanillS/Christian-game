@@ -13,6 +13,7 @@ const roundNames: Record<string, string> = {
   'guess-melody': 'Угадай Мелодию',
   'bible-quotes': 'Библейские Цитаты',
   'guess-voice': 'Угадай, Кто Говорит',
+  calendar: 'Календарь',
 }
 
 interface DifficultySelectorProps {

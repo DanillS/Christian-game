@@ -7,7 +7,6 @@ import GuessMelodyGame from './games/GuessMelodyGame'
 import BibleQuotesGame from './games/BibleQuotesGame'
 import GuessVoiceGame from './games/GuessVoiceGame'
 import CalendarGame from './games/CalendarGame'
-import { getRoundData } from '@/data/roundData'
 
 interface RoundGameProps {
   roundId: string
@@ -28,16 +27,56 @@ export default function RoundGame({
   const [score, setScore] = useState(0)
   const [usedQuestions, setUsedQuestions] = useState<number[]>([])
   const [questions, setQuestions] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const data = getRoundData(roundId, difficulty)
-    setQuestions(data)
-    // Загружаем использованные вопросы
+    setScore(0)
+  }, [roundId, difficulty])
+
+  useEffect(() => {
+    let ignore = false
+    const loadQuestions = async () => {
+      setIsLoading(true)
+      try {
+        const response = await fetch(`/api/round-data/${roundId}/${difficulty}`)
+        if (!response.ok) {
+          throw new Error('Failed to load round data')
+        }
+        const payload = await response.json()
+        if (!ignore) {
+          setQuestions(Array.isArray(payload.questions) ? payload.questions : [])
+        }
+      } catch (error) {
+        console.error('[RoundGame] Ошибка загрузки вопросов', error)
+        if (!ignore) {
+          setQuestions([])
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    loadQuestions()
+
+    return () => {
+      ignore = true
+    }
+  }, [roundId, difficulty])
+
+  useEffect(() => {
     const saved = localStorage.getItem(`used-${roundId}-${difficulty}`)
     if (saved) {
       setUsedQuestions(JSON.parse(saved))
+    } else {
+      setUsedQuestions([])
     }
   }, [roundId, difficulty])
+
+  useEffect(() => {
+    setCurrentIndex(initialQuestionIndex)
+  }, [initialQuestionIndex])
 
   // Используем useMemo для вычисления доступных вопросов без побочных эффектов
   const availableQuestions = useMemo(() => {
@@ -82,15 +121,32 @@ export default function RoundGame({
     }
   }
 
-  const currentQuestion = availableQuestions.length > 0 
-    ? availableQuestions[currentIndex % availableQuestions.length] 
-    : null
+  const currentQuestion =
+    availableQuestions.length > 0
+      ? availableQuestions[currentIndex % availableQuestions.length]
+      : null
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center text-white">
+          <p className="text-2xl mb-4">Загрузка...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!currentQuestion) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center text-white">
-          <p className="text-2xl mb-4">Загрузка...</p>
+          <p className="text-2xl mb-4">Для выбранного уровня пока нет вопросов.</p>
+          <button
+            onClick={onBack}
+            className="mt-4 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg transition-all backdrop-blur-md"
+          >
+            ← Вернуться к выбору сложности
+          </button>
         </div>
       </div>
     )
