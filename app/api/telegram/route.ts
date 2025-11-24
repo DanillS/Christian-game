@@ -378,7 +378,7 @@ async function handleStateStep(message: TelegramMessage, state: UserState) {
 
   if (state.step === 'correctAnswer') {
     const text = (message.text || message.caption || '').trim()
-    if (text) {
+    if (text && state.type) {
       state.data.correctAnswer = text
       state.step = getNextStep(state.type, 'correctAnswer')
       await processStateStep(chatId, userId, state)
@@ -451,6 +451,11 @@ async function processStateStep(chatId: number, userId: number, state: UserState
 }
 
 async function finalizeQuestion(chatId: number, userId: number, state: UserState) {
+  if (!state.type) {
+    await sendTelegramMessage(chatId, '❌ Ошибка: тип вопроса не определен.')
+    return
+  }
+
   try {
     if (state.type === 'add_face') {
       if (state.data.options.length < 2) {
