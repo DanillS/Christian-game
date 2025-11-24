@@ -37,11 +37,28 @@ interface TelegramMessage {
   voice?: { file_id: string; mime_type?: string } | null
 }
 
+interface TelegramCallbackQuery {
+  id: string
+  from: TelegramUser
+  message?: TelegramMessage
+  data: string
+}
+
 interface TelegramUpdate {
   update_id: number
   message?: TelegramMessage
   edited_message?: TelegramMessage
+  callback_query?: TelegramCallbackQuery
 }
+
+// Состояния пользователей для пошагового сбора данных
+interface UserState {
+  type: 'add_face' | 'add_melody' | 'add_voice' | 'add_quote' | 'add_icon' | null
+  step: string
+  data: Record<string, any>
+}
+
+const userStates = new Map<number, UserState>()
 
 export async function GET() {
   // GET endpoint для проверки статуса бота через браузер
@@ -99,6 +116,12 @@ export async function POST(request: Request) {
 }
 
 async function processUpdate(update: TelegramUpdate) {
+  // Обработка callback_query (нажатия на inline кнопки)
+  if (update.callback_query) {
+    await handleCallbackQuery(update.callback_query)
+    return
+  }
+
   const message = update.message || update.edited_message
   if (!message) {
     console.log('[Telegram] Нет message в update')
@@ -106,11 +129,23 @@ async function processUpdate(update: TelegramUpdate) {
   }
 
   const chatId = message.chat.id
+  const userId = message.from?.id
   const text = (message.text || message.caption || '').trim()
   console.log('[Telegram] Сообщение от', chatId, 'текст:', text.substring(0, 100))
 
-  if (!text.startsWith('/')) {
-    await sendTelegramMessage(chatId, 'Отправьте команду. Используйте /help для подсказки.')
+  // Проверяем, есть ли активное состояние для пользователя
+  if (userId) {
+    const state = userStates.get(userId)
+    if (state && state.type) {
+      // Продолжаем сбор данных
+      await handleStateStep(message, state)
+      return
+    }
+  }
+
+  // Если нет активного состояния и текст не команда - показываем подсказку
+  if (!text.startsWith('/') && !text.startsWith('menu_') && !text.startsWith('add_') && !text.startsWith('icon_')) {
+    await sendTelegramMessage(chatId, 'Отправьте команду. Используйте /help для подсказки или /menu для меню.')
     return
   }
 
@@ -119,7 +154,7 @@ async function processUpdate(update: TelegramUpdate) {
 
   switch (command) {
     case '/start':
-      await sendTelegramMessage(chatId, getWelcomeText())
+      await sendTelegramMessage(chatId, getWelcomeText(), getMainMenuKeyboard())
       break
     case '/help':
       await sendTelegramMessage(chatId, getHelpText())
@@ -133,20 +168,34 @@ async function processUpdate(update: TelegramUpdate) {
     case '/logout':
       await handleLogout(message)
       break
+    case '/menu':
+      await showMainMenu(chatId)
+      break
+    case '/done':
+      if (userId) {
+        const state = userStates.get(userId)
+        if (state && state.step === 'options' && state.data.options && state.data.options.length >= 2) {
+          state.step = 'correctAnswer'
+          await processStateStep(chatId, userId, state)
+        } else {
+          await sendTelegramMessage(chatId, '❌ Нужно минимум 2 варианта ответа.')
+        }
+      }
+      break
     case '/add_icon':
-      await handleAddIcon(message, payload)
+      await startAddIcon(message)
       break
     case '/add_face':
-      await handleAddFace(message, payload)
+      await startAddFace(message)
       break
     case '/add_melody':
-      await handleAddAudio(message, payload, 'guess_melody_questions', 'audio/melodies')
+      await startAddMelody(message)
       break
     case '/add_voice':
-      await handleAddAudio(message, payload, 'guess_voice_questions', 'audio/voices')
+      await startAddVoice(message)
       break
     case '/add_quote':
-      await handleAddQuote(message, payload)
+      await startAddQuote(message)
       break
     default:
       await sendTelegramMessage(chatId, 'Неизвестная команда. Используйте /help.')
@@ -162,6 +211,413 @@ function splitCommand(text: string) {
     command: text.slice(0, spaceIndex),
     payload: text.slice(spaceIndex + 1).trim(),
   }
+}
+
+// ========== Обработчики callback_query и состояний ==========
+
+async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
+  const userId = callbackQuery.from.id
+  const chatId = callbackQuery.message?.chat.id || callbackQuery.from.id
+  const data = callbackQuery.data
+
+  await answerCallbackQuery(callbackQuery.id)
+
+  if (!(await ensureAuthorized({ from: callbackQuery.from, chat: { id: chatId } } as TelegramMessage))) {
+    return
+  }
+
+  if (data === 'cancel') {
+    userStates.delete(userId)
+    await sendTelegramMessage(chatId, '❌ Отменено. Используйте /menu для главного меню.', getMainMenuKeyboard())
+    return
+  }
+
+  if (data === 'menu_add') {
+    await sendTelegramMessage(chatId, 'Выберите тип вопроса:', getAddQuestionTypeKeyboard())
+    return
+  }
+
+  if (data === 'menu_icon') {
+    await sendTelegramMessage(chatId, 'Выберите раунд для иконки:', getRoundIconKeyboard())
+    return
+  }
+
+  if (data === 'menu_status') {
+    await handleStatus(chatId)
+    return
+  }
+
+  if (data.startsWith('icon_')) {
+    const roundId = data.replace('icon_', '')
+    userStates.set(userId, { type: 'add_icon', step: 'waiting_file', data: { roundId } })
+    await sendTelegramMessage(chatId, `Отправьте PNG изображение для раунда "${roundId}"`)
+    return
+  }
+
+  if (data.startsWith('add_')) {
+    const type = data.replace('add_', '') as 'face' | 'melody' | 'voice' | 'quote'
+    if (type === 'face') await startAddFace({ from: callbackQuery.from, chat: { id: chatId } } as TelegramMessage)
+    else if (type === 'melody') await startAddMelody({ from: callbackQuery.from, chat: { id: chatId } } as TelegramMessage)
+    else if (type === 'voice') await startAddVoice({ from: callbackQuery.from, chat: { id: chatId } } as TelegramMessage)
+    else if (type === 'quote') await startAddQuote({ from: callbackQuery.from, chat: { id: chatId } } as TelegramMessage)
+    return
+  }
+
+  // Обработка выбора сложности
+  if (data.includes('_difficulty_')) {
+    const parts = data.split('_difficulty_')
+    if (parts.length === 2) {
+      const difficulty = parts[1]
+      const state = userStates.get(userId)
+      if (state) {
+        state.data.difficulty = difficulty
+        state.step = getNextStep(state.type, 'difficulty')
+        await processStateStep(chatId, userId, state)
+      }
+    }
+    return
+  }
+
+  // Обработка типа вопроса для цитат
+  if (data.includes('_type_')) {
+    const [prefix, questionType] = data.split('_type_')
+    const state = userStates.get(userId)
+    if (state && state.type === 'add_quote') {
+      state.data.questionType = questionType
+      state.step = 'quote'
+      await sendTelegramMessage(chatId, '📝 Введите текст цитаты:')
+    }
+    return
+  }
+}
+
+async function showMainMenu(chatId: number) {
+  await sendTelegramMessage(chatId, '📋 <b>Главное меню</b>\n\nВыберите действие:', getMainMenuKeyboard())
+}
+
+async function startAddIcon(message: TelegramMessage) {
+  if (!(await ensureAuthorized(message))) return
+  const userId = message.from?.id
+  const chatId = message.chat.id
+  if (!userId) return
+
+  await sendTelegramMessage(chatId, 'Выберите раунд для иконки:', getRoundIconKeyboard())
+}
+
+async function startAddFace(message: TelegramMessage) {
+  if (!(await ensureAuthorized(message))) return
+  const userId = message.from?.id
+  const chatId = message.chat.id
+  if (!userId) return
+
+  userStates.set(userId, {
+    type: 'add_face',
+    step: 'difficulty',
+    data: { options: [], parts: ['nose', 'eyes', 'mouth', 'hands', 'full'] },
+  })
+  await sendTelegramMessage(chatId, '👤 <b>Добавление вопроса "Угадай лицо"</b>\n\nВыберите сложность:', getDifficultyKeyboard('face_difficulty'))
+}
+
+async function startAddMelody(message: TelegramMessage) {
+  if (!(await ensureAuthorized(message))) return
+  const userId = message.from?.id
+  const chatId = message.chat.id
+  if (!userId) return
+
+  userStates.set(userId, { type: 'add_melody', step: 'difficulty', data: { options: [] } })
+  await sendTelegramMessage(chatId, '🎵 <b>Добавление вопроса "Угадай мелодию"</b>\n\nВыберите сложность:', getDifficultyKeyboard('melody_difficulty'))
+}
+
+async function startAddVoice(message: TelegramMessage) {
+  if (!(await ensureAuthorized(message))) return
+  const userId = message.from?.id
+  const chatId = message.chat.id
+  if (!userId) return
+
+  userStates.set(userId, { type: 'add_voice', step: 'difficulty', data: { options: [] } })
+  await sendTelegramMessage(chatId, '🎤 <b>Добавление вопроса "Угадай голос"</b>\n\nВыберите сложность:', getDifficultyKeyboard('voice_difficulty'))
+}
+
+async function startAddQuote(message: TelegramMessage) {
+  if (!(await ensureAuthorized(message))) return
+  const userId = message.from?.id
+  const chatId = message.chat.id
+  if (!userId) return
+
+  userStates.set(userId, { type: 'add_quote', step: 'difficulty', data: {} })
+  await sendTelegramMessage(chatId, '📖 <b>Добавление библейской цитаты</b>\n\nВыберите сложность:', getDifficultyKeyboard('quote_difficulty'))
+}
+
+function getNextStep(type: string, currentStep: string): string {
+  const flows: Record<string, Record<string, string>> = {
+    add_face: {
+      difficulty: 'options',
+      options: 'correctAnswer',
+      correctAnswer: 'photo',
+    },
+    add_melody: {
+      difficulty: 'options',
+      options: 'audio',
+    },
+    add_voice: {
+      difficulty: 'options',
+      options: 'audio',
+    },
+    add_quote: {
+      difficulty: 'questionType',
+      questionType: 'quote',
+      quote: 'options',
+      options: 'correctAnswer',
+      correctAnswer: 'source',
+    },
+  }
+  return flows[type]?.[currentStep] || 'done'
+}
+
+async function handleStateStep(message: TelegramMessage, state: UserState) {
+  const userId = message.from?.id
+  const chatId = message.chat.id
+  if (!userId) return
+
+  if (state.step === 'options') {
+    const text = (message.text || message.caption || '').trim()
+    if (text) {
+      if (!state.data.options) state.data.options = []
+      state.data.options.push(text)
+      const count = state.data.options.length
+      await sendTelegramMessage(
+        chatId,
+        `✅ Вариант ${count} добавлен: "${text}"\n\nВведите следующий вариант ответа (минимум 2 варианта).\nИли отправьте /done для завершения.`
+      )
+    }
+    return
+  }
+
+  if (state.step === 'correctAnswer') {
+    const text = (message.text || message.caption || '').trim()
+    if (text) {
+      state.data.correctAnswer = text
+      state.step = getNextStep(state.type, 'correctAnswer')
+      await processStateStep(chatId, userId, state)
+    }
+    return
+  }
+
+  if (state.step === 'quote') {
+    const text = (message.text || message.caption || '').trim()
+    if (text) {
+      state.data.quote = text
+      state.step = 'options'
+      await sendTelegramMessage(chatId, '📝 Цитата сохранена.\n\nВведите первый вариант ответа:')
+    }
+    return
+  }
+
+  if (state.step === 'source') {
+    const text = (message.text || message.caption || '').trim()
+    if (text) {
+      state.data.source = text
+      await finalizeQuestion(chatId, userId, state)
+    }
+    return
+  }
+
+  if (state.step === 'photo' && state.type === 'add_face') {
+    const fileId = extractImageFileId(message)
+    if (fileId) {
+      state.data.fileId = fileId
+      await finalizeQuestion(chatId, userId, state)
+    } else {
+      await sendTelegramMessage(chatId, '❌ Прикрепите фотографию.')
+    }
+    return
+  }
+
+  if (state.step === 'audio' && (state.type === 'add_melody' || state.type === 'add_voice')) {
+    const fileInfo = extractAudioFile(message)
+    if (fileInfo) {
+      state.data.fileId = fileInfo.file_id
+      await finalizeQuestion(chatId, userId, state)
+    } else {
+      await sendTelegramMessage(chatId, '❌ Прикрепите MP3 файл.')
+    }
+    return
+  }
+
+  if (state.step === 'waiting_file' && state.type === 'add_icon') {
+    const fileId = extractImageFileId(message)
+    if (fileId) {
+      await finalizeIcon(chatId, userId, state, fileId)
+    } else {
+      await sendTelegramMessage(chatId, '❌ Прикрепите PNG изображение.')
+    }
+    return
+  }
+}
+
+async function processStateStep(chatId: number, userId: number, state: UserState) {
+  if (state.step === 'options') {
+    await sendTelegramMessage(chatId, '📝 Введите первый вариант ответа:')
+  } else if (state.step === 'correctAnswer') {
+    const options = state.data.options || []
+    const optionsText = options.map((o: string, i: number) => `${i + 1}. ${o}`).join('\n')
+    await sendTelegramMessage(chatId, `Варианты ответов:\n${optionsText}\n\n✅ Введите правильный ответ:`)
+  } else if (state.step === 'questionType' && state.type === 'add_quote') {
+    await sendTelegramMessage(chatId, 'Выберите тип вопроса:', getQuestionTypeKeyboard('quote_type'))
+  }
+}
+
+async function finalizeQuestion(chatId: number, userId: number, state: UserState) {
+  try {
+    if (state.type === 'add_face') {
+      if (state.data.options.length < 2) {
+        await sendTelegramMessage(chatId, '❌ Нужно минимум 2 варианта ответа. Введите еще варианты.')
+        state.step = 'options'
+        return
+      }
+      await saveFaceQuestion(chatId, state)
+    } else if (state.type === 'add_melody') {
+      if (state.data.options.length < 2) {
+        await sendTelegramMessage(chatId, '❌ Нужно минимум 2 варианта ответа. Введите еще варианты.')
+        state.step = 'options'
+        return
+      }
+      await saveMelodyQuestion(chatId, state)
+    } else if (state.type === 'add_voice') {
+      if (state.data.options.length < 2) {
+        await sendTelegramMessage(chatId, '❌ Нужно минимум 2 варианта ответа. Введите еще варианты.')
+        state.step = 'options'
+        return
+      }
+      await saveVoiceQuestion(chatId, state)
+    } else if (state.type === 'add_quote') {
+      if (!state.data.options || state.data.options.length < 2) {
+        await sendTelegramMessage(chatId, '❌ Нужно минимум 2 варианта ответа. Введите еще варианты.')
+        state.step = 'options'
+        return
+      }
+      await saveQuoteQuestion(chatId, state)
+    }
+    userStates.delete(userId)
+  } catch (error) {
+    console.error('[Telegram] Ошибка сохранения вопроса', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка при сохранении. Попробуйте снова.')
+  }
+}
+
+async function finalizeIcon(chatId: number, userId: number, state: UserState, fileId: string) {
+  try {
+    const file = await downloadTelegramFile(fileId)
+    const extension = file.extension || 'png'
+    const objectPath = `icons/${state.data.roundId}.${extension}`
+
+    const publicUrl = await supabaseStorageUpload(objectPath, file.buffer, file.mimeType, {
+      upsert: true,
+    })
+
+    await supabaseRestRequest('round_icons', {
+      method: 'POST',
+      searchParams: { on_conflict: 'round_id' },
+      headers: { Prefer: 'resolution=merge-duplicates' },
+      body: {
+        round_id: state.data.roundId,
+        icon_url: publicUrl,
+        updated_at: new Date().toISOString(),
+      },
+    })
+
+    userStates.delete(userId)
+    await sendTelegramMessage(chatId, `✅ Иконка для "${state.data.roundId}" успешно обновлена!`, getMainMenuKeyboard())
+  } catch (error) {
+    console.error('[Telegram] Ошибка сохранения иконки', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка при сохранении иконки. Попробуйте снова.')
+  }
+}
+
+async function saveFaceQuestion(chatId: number, state: UserState) {
+  const file = await downloadTelegramFile(state.data.fileId)
+  const timestamp = Date.now()
+  const extension = file.extension || 'jpg'
+  const objectPath = `images/faces/${state.data.difficulty}/${timestamp}.${extension}`
+
+  const publicUrl = await supabaseStorageUpload(objectPath, file.buffer, file.mimeType, {
+    upsert: false,
+  })
+
+  await supabaseRestRequest('guess_face_questions', {
+    method: 'POST',
+    body: {
+      difficulty: state.data.difficulty,
+      image_url: publicUrl,
+      parts: state.data.parts || ['nose', 'eyes', 'mouth', 'hands', 'full'],
+      options: state.data.options,
+      correct_answer: state.data.correctAnswer,
+    },
+  })
+
+  await sendTelegramMessage(chatId, `✅ Вопрос "Угадай лицо" (${state.data.difficulty}) успешно добавлен!`, getMainMenuKeyboard())
+}
+
+async function saveMelodyQuestion(chatId: number, state: UserState) {
+  const file = await downloadTelegramFile(state.data.fileId)
+  const timestamp = Date.now()
+  const extension = file.extension || 'mp3'
+  const objectPath = `audio/melodies/${state.data.difficulty}/${timestamp}.${extension}`
+
+  const publicUrl = await supabaseStorageUpload(objectPath, file.buffer, file.mimeType, {
+    upsert: false,
+  })
+
+  await supabaseRestRequest('guess_melody_questions', {
+    method: 'POST',
+    body: {
+      difficulty: state.data.difficulty,
+      audio_url: publicUrl,
+      options: state.data.options,
+      correct_answer: state.data.correctAnswer,
+    },
+  })
+
+  await sendTelegramMessage(chatId, `✅ Вопрос "Угадай мелодию" (${state.data.difficulty}) успешно добавлен!`, getMainMenuKeyboard())
+}
+
+async function saveVoiceQuestion(chatId: number, state: UserState) {
+  const file = await downloadTelegramFile(state.data.fileId)
+  const timestamp = Date.now()
+  const extension = file.extension || 'mp3'
+  const objectPath = `audio/voices/${state.data.difficulty}/${timestamp}.${extension}`
+
+  const publicUrl = await supabaseStorageUpload(objectPath, file.buffer, file.mimeType, {
+    upsert: false,
+  })
+
+  await supabaseRestRequest('guess_voice_questions', {
+    method: 'POST',
+    body: {
+      difficulty: state.data.difficulty,
+      audio_url: publicUrl,
+      options: state.data.options,
+      correct_answer: state.data.correctAnswer,
+    },
+  })
+
+  await sendTelegramMessage(chatId, `✅ Вопрос "Угадай голос" (${state.data.difficulty}) успешно добавлен!`, getMainMenuKeyboard())
+}
+
+async function saveQuoteQuestion(chatId: number, state: UserState) {
+  await supabaseRestRequest('bible_quote_questions', {
+    method: 'POST',
+    body: {
+      difficulty: state.data.difficulty,
+      quote: state.data.quote,
+      question_type: state.data.questionType,
+      options: state.data.options,
+      correct_answer: state.data.correctAnswer,
+      source: state.data.source || '',
+    },
+  })
+
+  await sendTelegramMessage(chatId, `✅ Библейская цитата (${state.data.difficulty}) успешно добавлена!`, getMainMenuKeyboard())
 }
 
 async function handleLogin(message: TelegramMessage, payload: string) {
@@ -230,7 +686,7 @@ async function handleLogin(message: TelegramMessage, payload: string) {
     },
   })
 
-  await sendTelegramMessage(chatId, 'Успешный вход. Сессия активна 12 часов.')
+  await sendTelegramMessage(chatId, '✅ Успешный вход! Сессия активна 12 часов.', getMainMenuKeyboard())
 }
 
 async function handleLogout(message: TelegramMessage) {
@@ -565,12 +1021,31 @@ async function downloadTelegramFile(fileId: string) {
   return { buffer, extension, mimeType }
 }
 
-async function sendTelegramMessage(chatId: number, text: string) {
+async function sendTelegramMessage(
+  chatId: number,
+  text: string,
+  keyboard?: any,
+  replyToMessageId?: number
+) {
   try {
+    const payload: any = {
+      chat_id: chatId,
+      text,
+      parse_mode: 'HTML',
+    }
+
+    if (keyboard) {
+      payload.reply_markup = keyboard
+    }
+
+    if (replyToMessageId) {
+      payload.reply_to_message_id = replyToMessageId
+    }
+
     const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text }),
+      body: JSON.stringify(payload),
     })
     const result = await response.json()
     if (!result.ok) {
@@ -583,6 +1058,91 @@ async function sendTelegramMessage(chatId: number, text: string) {
     if (error instanceof Error) {
       console.error('[Telegram] Stack:', error.stack)
     }
+  }
+}
+
+async function answerCallbackQuery(callbackQueryId: string, text?: string, showAlert = false) {
+  try {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        callback_query_id: callbackQueryId,
+        text,
+        show_alert: showAlert,
+      }),
+    })
+  } catch (error) {
+    console.error('[Telegram] Ошибка ответа на callback', error)
+  }
+}
+
+function getMainMenuKeyboard() {
+  return {
+    inline_keyboard: [
+      [
+        { text: '➕ Добавить вопрос', callback_data: 'menu_add' },
+        { text: '🖼️ Добавить иконку', callback_data: 'menu_icon' },
+      ],
+      [{ text: '📊 Статус', callback_data: 'menu_status' }],
+    ],
+  }
+}
+
+function getDifficultyKeyboard(callbackPrefix: string) {
+  return {
+    inline_keyboard: [
+      [
+        { text: '😊 Легко', callback_data: `${callbackPrefix}_easy` },
+        { text: '🤔 Средне', callback_data: `${callbackPrefix}_medium` },
+        { text: '😤 Тяжело', callback_data: `${callbackPrefix}_hard` },
+      ],
+      [{ text: '❌ Отмена', callback_data: 'cancel' }],
+    ],
+  }
+}
+
+function getQuestionTypeKeyboard(callbackPrefix: string) {
+  return {
+    inline_keyboard: [
+      [
+        { text: '📖 Источник', callback_data: `${callbackPrefix}_source` },
+        { text: '➡️ Продолжить', callback_data: `${callbackPrefix}_continue` },
+      ],
+      [{ text: '❌ Отмена', callback_data: 'cancel' }],
+    ],
+  }
+}
+
+function getRoundIconKeyboard() {
+  return {
+    inline_keyboard: [
+      [
+        { text: '👤 Угадай лицо', callback_data: 'icon_guess-face' },
+        { text: '🎵 Угадай мелодию', callback_data: 'icon_guess-melody' },
+      ],
+      [
+        { text: '📖 Библейские цитаты', callback_data: 'icon_bible-quotes' },
+        { text: '🎤 Угадай голос', callback_data: 'icon_guess-voice' },
+      ],
+      [{ text: '📅 Календарь', callback_data: 'icon_calendar' }, { text: '❌ Отмена', callback_data: 'cancel' }],
+    ],
+  }
+}
+
+function getAddQuestionTypeKeyboard() {
+  return {
+    inline_keyboard: [
+      [
+        { text: '👤 Угадай лицо', callback_data: 'add_face' },
+        { text: '🎵 Угадай мелодию', callback_data: 'add_melody' },
+      ],
+      [
+        { text: '🎤 Угадай голос', callback_data: 'add_voice' },
+        { text: '📖 Библейская цитата', callback_data: 'add_quote' },
+      ],
+      [{ text: '❌ Отмена', callback_data: 'cancel' }],
+    ],
   }
 }
 
@@ -632,13 +1192,9 @@ async function handleStatus(chatId: number) {
 }
 
 function getWelcomeText() {
-  return [
-    'Привет! Это админ-бот "Рождественские Тайны".',
-    '1. Войдите: /login <пароль>',
-    '2. Добавьте иконки, фото, аудио и цитаты прямо здесь.',
-    '3. Используйте /help для подробных инструкций.',
-    '4. Проверьте статус: /status',
-  ].join('\n')
+  return '👋 <b>Привет! Это админ-бот "Рождественские Тайны"</b>\n\n' +
+    'Используйте кнопки ниже для навигации.\n' +
+    'Для входа отправьте: /login <пароль>'
 }
 
 function getHelpText() {
