@@ -10,7 +10,21 @@ const ACTIVE_KEY = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY || ''
 export const SUPABASE_STORAGE_BUCKET = process.env.SUPABASE_STORAGE_BUCKET || 'game-content'
 
 export function isSupabaseEnabled() {
-  return Boolean(SUPABASE_URL && ACTIVE_KEY)
+  const hasUrl = Boolean(SUPABASE_URL)
+  const hasKey = Boolean(ACTIVE_KEY)
+  const enabled = hasUrl && hasKey
+  
+  // Логируем только если не настроено (чтобы не спамить логи)
+  if (!enabled && (hasUrl || hasKey)) {
+    console.log('[Supabase] Проверка:', {
+      hasUrl,
+      hasKey,
+      urlLength: SUPABASE_URL.length,
+      keyLength: ACTIVE_KEY.length,
+    })
+  }
+  
+  return enabled
 }
 
 export function isVercelBlobEnabled() {

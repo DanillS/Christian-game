@@ -45,6 +45,10 @@ interface TelegramUpdate {
 
 export async function GET() {
   // GET endpoint для проверки статуса бота через браузер
+  const supabaseUrl = process.env.SUPABASE_URL || ''
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || ''
+  
   return NextResponse.json({
     status: 'ok',
     bot_configured: Boolean(TELEGRAM_BOT_TOKEN),
@@ -52,6 +56,14 @@ export async function GET() {
     vercel_blob_configured: isVercelBlobEnabled(),
     admin_password_set: Boolean(TELEGRAM_ADMIN_PASSWORD),
     secret_token_set: Boolean(TELEGRAM_SECRET_TOKEN),
+    // Отладочная информация (без значений, только факт наличия)
+    env_check: {
+      has_supabase_url: Boolean(supabaseUrl),
+      has_supabase_service_key: Boolean(supabaseServiceKey),
+      has_supabase_anon_key: Boolean(supabaseAnonKey),
+      supabase_url_length: supabaseUrl.length,
+      active_key_length: (supabaseServiceKey || supabaseAnonKey).length,
+    },
     timestamp: new Date().toISOString(),
   })
 }
@@ -162,15 +174,25 @@ async function handleLogin(message: TelegramMessage, payload: string) {
   }
 
   if (!isSupabaseEnabled()) {
+    const supabaseUrl = process.env.SUPABASE_URL || ''
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || ''
+    
+    const missing = []
+    if (!supabaseUrl) missing.push('SUPABASE_URL')
+    if (!supabaseServiceKey && !supabaseAnonKey) {
+      missing.push('SUPABASE_SERVICE_ROLE_KEY или SUPABASE_ANON_KEY')
+    }
+    
     await sendTelegramMessage(
       chatId,
       '❌ База данных Supabase не настроена.\n\n' +
+        `Отсутствуют: ${missing.join(', ')}\n\n` +
         'Для работы бота нужна база данных Supabase (для хранения сессий и вопросов).\n' +
         'Vercel Blob Storage используется только для файлов (иконки, фото, аудио).\n\n' +
-        'Настройте переменные окружения:\n' +
-        '- SUPABASE_URL\n' +
-        '- SUPABASE_ANON_KEY или SUPABASE_SERVICE_ROLE_KEY\n\n' +
-        'Проверьте статус: /status'
+        '⚠️ Если проект на Vercel, задайте переменные в:\n' +
+        'Vercel Dashboard → Settings → Environment Variables\n\n' +
+        'Проверьте детальный статус: /status'
     )
     return
   }
@@ -565,18 +587,36 @@ async function sendTelegramMessage(chatId: number, text: string) {
 }
 
 async function handleStatus(chatId: number) {
+  const supabaseUrl = process.env.SUPABASE_URL || ''
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || ''
   const supabaseOk = isSupabaseEnabled()
   const blobOk = isVercelBlobEnabled()
+  
+  const missingSupabase = []
+  if (!supabaseUrl) missingSupabase.push('SUPABASE_URL')
+  if (!supabaseServiceKey && !supabaseAnonKey) {
+    missingSupabase.push('SUPABASE_SERVICE_ROLE_KEY или SUPABASE_ANON_KEY')
+  }
   
   const status = [
     '📊 Статус системы:',
     '',
     `✅ Telegram бот: ${TELEGRAM_BOT_TOKEN ? 'настроен' : '❌ не настроен'}`,
-    `✅ Supabase (БД): ${supabaseOk ? 'настроен' : '❌ не настроен'}`,
-    `   ${supabaseOk ? '' : '   Нужны: SUPABASE_URL + ключи'}`,
-    `✅ Vercel Blob (файлы): ${blobOk ? 'настроен' : '❌ не настроен'}`,
+    '',
+    `✅ Supabase (БД): ${supabaseOk ? 'настроен ✅' : '❌ не настроен'}`,
+    ...(supabaseOk
+      ? []
+      : [
+          `   Отсутствуют: ${missingSupabase.join(', ')}`,
+          `   SUPABASE_URL: ${supabaseUrl ? '✅ есть' : '❌ нет'} (длина: ${supabaseUrl.length})`,
+          `   Ключи: ${supabaseServiceKey || supabaseAnonKey ? '✅ есть' : '❌ нет'}`,
+        ]),
+    '',
+    `✅ Vercel Blob (файлы): ${blobOk ? 'настроен ✅' : '❌ не настроен'}`,
     `   ${blobOk ? '' : '   Нужен: BLOB_READ_WRITE_TOKEN'}`,
-    `✅ Пароль админа: ${TELEGRAM_ADMIN_PASSWORD ? 'задан' : '❌ не задан'}`,
+    '',
+    `✅ Пароль админа: ${TELEGRAM_ADMIN_PASSWORD ? 'задан ✅' : '❌ не задан'}`,
     '',
     supabaseOk
       ? '✅ Бот готов к работе'
