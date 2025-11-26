@@ -144,12 +144,31 @@ export async function supabaseStorageUpload(
 ) {
   // Приоритет: Vercel Blob Storage, затем Supabase Storage
   if (isVercelBlobEnabled()) {
-    return vercelBlobUpload(objectPath, file, contentType, options)
+    try {
+      return await vercelBlobUpload(objectPath, file, contentType, options)
+    } catch (error) {
+      console.warn('[Storage] Vercel Blob upload failed, falling back to Supabase:', error)
+      // Fallback на Supabase если Vercel Blob не работает
+      if (isSupabaseEnabled()) {
+        return supabaseStorageUploadFallback(objectPath, file, contentType, options)
+      }
+      throw error
+    }
   }
 
   if (!isSupabaseEnabled()) {
     throw new Error('Storage is not configured (neither Vercel Blob nor Supabase)')
   }
+
+  return supabaseStorageUploadFallback(objectPath, file, contentType, options)
+}
+
+async function supabaseStorageUploadFallback(
+  objectPath: string,
+  file: Buffer | ArrayBuffer,
+  contentType: string,
+  options: { upsert?: boolean } = {}
+) {
 
   const url = new URL(
     `${SUPABASE_URL}/storage/v1/object/${SUPABASE_STORAGE_BUCKET}/${objectPath.replace(/^\//, '')}`
@@ -199,7 +218,9 @@ async function vercelBlobUpload(
 
   const cleanPath = objectPath.replace(/^\//, '')
   
-  // Используем официальный API endpoint Vercel Blob
+  // Vercel Blob API использует формат: https://blob.vercel-storage.com/<path>
+  // Но для создания нужен POST запрос на /put с токеном
+  // Попробуем использовать правильный формат API
   const url = `https://blob.vercel-storage.com/${cleanPath}`
 
   // Преобразуем в Uint8Array для совместимости с fetch API
@@ -214,7 +235,6 @@ async function vercelBlobUpload(
   // Vercel Blob требует токен в заголовке Authorization
   headers.set('Authorization', `Bearer ${BLOB_READ_WRITE_TOKEN}`)
   headers.set('Content-Type', contentType || 'application/octet-stream')
-  headers.set('x-content-type', contentType || 'application/octet-stream')
   
   if (options.upsert) {
     headers.set('x-add-random-suffix', 'false')
@@ -230,20 +250,31 @@ async function vercelBlobUpload(
 
     if (!response.ok) {
       const errorText = await response.text()
+      let errorMessage = `Vercel Blob upload failed (${response.status}): ${errorText}`
+      
+      // Если ошибка "Store not found", возможно нужно использовать другой формат
+      if (response.status === 404 && errorText.includes('store_not_found')) {
+        errorMessage += '\n\n💡 Совет: Убедитесь, что:\n' +
+          '1. Токен правильный (формат: vercel_blob_rw_...)\n' +
+          '2. Store создан в Vercel Dashboard → Storage → Blob\n' +
+          '3. Токен имеет права Read & Write'
+      }
+      
       console.error('[Vercel Blob] Upload failed:', {
         status: response.status,
         statusText: response.statusText,
         error: errorText,
         url,
+        path: cleanPath,
         tokenLength: BLOB_READ_WRITE_TOKEN.length,
         tokenPrefix: BLOB_READ_WRITE_TOKEN.substring(0, 20) + '...',
       })
-      throw new Error(`Vercel Blob upload failed (${response.status}): ${errorText}`)
+      throw new Error(errorMessage)
     }
 
     const result = await response.json()
     // Vercel Blob возвращает URL в поле url
-    const blobUrl = result.url || result.path || result
+    const blobUrl = result.url || result.path || (typeof result === 'string' ? result : null)
     if (!blobUrl || typeof blobUrl !== 'string') {
       console.error('[Vercel Blob] Unexpected response:', result)
       throw new Error('Vercel Blob did not return a URL')

@@ -534,10 +534,17 @@ async function finalizeIcon(chatId: number, userId: number, state: UserState, fi
     })
 
     userStates.delete(userId)
-    await sendTelegramMessage(chatId, `✅ Иконка для "${state.data.roundId}" успешно обновлена!`, getMainMenuKeyboard())
+    
+    // Отправляем изображение с подписью об успехе
+    try {
+      await sendTelegramPhoto(chatId, fileId, `✅ Иконка для "${state.data.roundId}" успешно обновлена!\n\nURL: ${publicUrl}`, getMainMenuKeyboard())
+    } catch (photoError) {
+      // Если не удалось отправить фото, отправляем текстовое сообщение
+      await sendTelegramMessage(chatId, `✅ Иконка для "${state.data.roundId}" успешно обновлена!\n\nURL: ${publicUrl}`, getMainMenuKeyboard())
+    }
   } catch (error) {
     console.error('[Telegram] Ошибка сохранения иконки', error)
-    await sendTelegramMessage(chatId, '❌ Ошибка при сохранении иконки. Попробуйте снова.')
+    await sendTelegramMessage(chatId, `❌ Ошибка при сохранении иконки: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`)
   }
 }
 
@@ -562,7 +569,11 @@ async function saveFaceQuestion(chatId: number, state: UserState) {
     },
   })
 
-  await sendTelegramMessage(chatId, `✅ Вопрос "Угадай лицо" успешно добавлен!`, getMainMenuKeyboard())
+  await sendTelegramMessage(
+    chatId,
+    `✅ Вопрос "Угадай лицо" успешно добавлен!\n\n📸 Изображение: ${publicUrl}`,
+    getMainMenuKeyboard()
+  )
 }
 
 async function saveMelodyQuestion(chatId: number, state: UserState) {
@@ -585,7 +596,11 @@ async function saveMelodyQuestion(chatId: number, state: UserState) {
     },
   })
 
-  await sendTelegramMessage(chatId, `✅ Вопрос "Угадай мелодию" успешно добавлен!`, getMainMenuKeyboard())
+  await sendTelegramMessage(
+    chatId,
+    `✅ Вопрос "Угадай мелодию" успешно добавлен!\n\n🎵 Аудио: ${publicUrl}`,
+    getMainMenuKeyboard()
+  )
 }
 
 async function saveVoiceQuestion(chatId: number, state: UserState) {
@@ -608,7 +623,11 @@ async function saveVoiceQuestion(chatId: number, state: UserState) {
     },
   })
 
-  await sendTelegramMessage(chatId, `✅ Вопрос "Угадай голос" успешно добавлен!`, getMainMenuKeyboard())
+  await sendTelegramMessage(
+    chatId,
+    `✅ Вопрос "Угадай голос" успешно добавлен!\n\n🎤 Аудио: ${publicUrl}`,
+    getMainMenuKeyboard()
+  )
 }
 
 async function saveQuoteQuestion(chatId: number, state: UserState) {
@@ -863,7 +882,7 @@ async function handleAddFace(message: TelegramMessage, payload: string) {
 
     await sendTelegramMessage(
       chatId,
-      `Вопрос добавлен (${data.difficulty}). Файл сохранён: ${objectPath}`
+      `✅ Вопрос "Угадай лицо" успешно добавлен!\n\n📸 Изображение: ${publicUrl}\n📁 Путь: ${objectPath}`
     )
   } catch (error) {
     console.error('[Telegram] Ошибка добавления лица', error)
@@ -930,7 +949,12 @@ async function handleAddAudio(
       },
     })
 
-    await sendTelegramMessage(chatId, `Аудиовопрос добавлен (${data.difficulty}).`)
+    const questionType = table === 'guess_melody_questions' ? 'Угадай мелодию' : 'Угадай голос'
+    const emoji = table === 'guess_melody_questions' ? '🎵' : '🎤'
+    await sendTelegramMessage(
+      chatId,
+      `✅ Вопрос "${questionType}" успешно добавлен!\n\n${emoji} Аудио: ${publicUrl}\n📁 Путь: ${objectPath}`
+    )
   } catch (error) {
     console.error('[Telegram] Ошибка добавления аудио', error)
     await sendTelegramMessage(chatId, 'Не удалось добавить аудиовопрос. Попробуйте позже.')
@@ -1081,6 +1105,44 @@ async function sendTelegramMessage(
     if (error instanceof Error) {
       console.error('[Telegram] Stack:', error.stack)
     }
+  }
+}
+
+async function sendTelegramPhoto(
+  chatId: number,
+  photoFileId: string,
+  caption?: string,
+  keyboard?: any
+) {
+  try {
+    const payload: any = {
+      chat_id: chatId,
+      photo: photoFileId,
+    }
+
+    if (caption) {
+      payload.caption = caption
+    }
+
+    if (keyboard) {
+      payload.reply_markup = keyboard
+    }
+
+    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    const result = await response.json()
+    if (!result.ok) {
+      console.error('[Telegram] Ошибка отправки фото:', result)
+      throw new Error(result.description || 'Failed to send photo')
+    } else {
+      console.log('[Telegram] Фото отправлено в', chatId)
+    }
+  } catch (error) {
+    console.error('[Telegram] Ошибка отправки фото', error)
+    throw error
   }
 }
 
