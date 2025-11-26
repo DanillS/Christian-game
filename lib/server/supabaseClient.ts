@@ -99,7 +99,7 @@ export async function supabaseRestRequest<T = any>(
     method,
     headers,
     body: body ? (typeof body === 'string' ? body : JSON.stringify(body)) : undefined,
-    cache: 'no-store',
+    next: { revalidate: 300 }
   })
 
   if (!response.ok) {
