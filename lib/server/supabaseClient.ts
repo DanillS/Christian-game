@@ -115,7 +115,21 @@ export async function supabaseRestRequest<T = any>(
     return (await response.text()) as T
   }
 
-  return (await response.json()) as T
+  try {
+    const text = await response.text()
+    
+    // Если ответ пустой - возвращаем подходящее значение
+    if (!text.trim()) {
+      if (expect === 'json') return [] as T  // для SELECT запросов
+      return undefined as T
+    }
+    
+    // Парсим JSON только если есть содержимое
+    return JSON.parse(text) as T
+  } catch (error) {
+    console.error('[Supabase] JSON parse error:', error)
+    throw new Error(`Supabase response parse error: ${error}`)
+  }
 }
 
 export async function supabaseStorageUpload(
