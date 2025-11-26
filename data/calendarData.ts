@@ -5,7 +5,7 @@ export const calendarData: Record<string, any[]> = {
   easy: [
     {
       questionType: 'date', // 'date' - угадать дату по фото, 'birthday' - угадать день рождения по дате
-      image: '/images/calendar/photo1.jpg', // Замените на путь к вашей фотографии
+      image: '/images/calendar/photo1.jpg', // Замените на путь к вашей фотографии (PNG, JPG, JPEG)
       options: ['1 января', '7 января', '14 января', '25 декабря'],
       correctAnswer: '7 января',
     },

@@ -36,7 +36,7 @@ TELEGRAM_SECRET_TOKEN=       # секрет для вебхука (опцион�
 
 Создайте bucket (по умолчанию `game-content`) и разрешите public-доступ к объектам. Файлы бот раскладывает так:
 
-- `icons/<round>.png`
+- `icons/<round>.png` (или `.jpg`, `.jpeg`)
 - `images/faces/<difficulty>/<timestamp>.jpg`
 - `audio/melodies/<difficulty>/<timestamp>.mp3`
 - `audio/voices/<difficulty>/<timestamp>.mp3`
@@ -116,7 +116,7 @@ create table public.bible_quote_questions (
 
 | Команда                     | Описание                                                                                          | Пример                                                                                                                                                                    |
 | --------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/add_icon <roundId>` + PNG | Обновляет иконку раунда (`guess-face`, `guess-melody`, `bible-quotes`, `guess-voice`, `calendar`) | `/add_icon guess-face`                                                                                                                                                    |
+| `/add_icon <roundId>` + изображение | Обновляет иконку раунда (PNG, JPG, JPEG) (`guess-face`, `guess-melody`, `bible-quotes`, `guess-voice`, `calendar`) | `/add_icon guess-face`                                                                                                                                                    |
 | `/add_face {json}` + фото   | Добавляет вопрос для "Угадай лицо"                                                                | `/add_face {"difficulty":"easy","options":["Иван","Мария"],"correctAnswer":"Иван","parts":["nose","eyes","mouth","hands","full"]}`                                        |
 | `/add_melody {json}` + mp3  | Вопрос для "Угадай мелодию"                                                                       | `/add_melody {"difficulty":"medium","options":["Тихая ночь","Ангелы"],"correctAnswer":"Тихая ночь"}`                                                                      |
 | `/add_voice {json}` + mp3   | Вопрос для "Угадай, кто говорит"                                                                  | `/add_voice {"difficulty":"hard","options":["Пастор","Диакон"],"correctAnswer":"Пастор"}`                                                                                 |
@@ -176,12 +176,12 @@ create table public.bible_quote_questions (
 
 Если проигрывается сценарий без базы данных, используйте прежний способ:
 
-1. **Иконки раундов** — поместите PNG в `public/icons/`:
-   - `guess-face.png`
-   - `guess-melody.png`
-   - `bible-quotes.png`
-   - `guess-voice.png`
-   - `calendar.png` (если хотите заменить иконку календаря)
+1. **Иконки раундов** — поместите изображения (PNG, JPG, JPEG) в `public/icons/`:
+   - `guess-face.png` (или `.jpg`, `.jpeg`)
+   - `guess-melody.png` (или `.jpg`, `.jpeg`)
+   - `bible-quotes.png` (или `.jpg`, `.jpeg`)
+   - `guess-voice.png` (или `.jpg`, `.jpeg`)
+   - `calendar.png` (или `.jpg`, `.jpeg`)
 2. **"Угадай лицо"** — фото в `public/images/faces/`, вопросы в `data/guessFaceData.ts`.
 3. **"Угадай мелодию"** — MP3 в `public/audio/melodies/`, данные в `data/guessMelodyData.ts`.
 4. **"Угадай, кто говорит"** — MP3 в `public/audio/voices/`, вопросы в `data/guessVoiceData.ts`.

@@ -10,31 +10,31 @@ const rounds = [
     id: 'guess-face',
     name: 'Угадай Лицо',
     description: 'Угадай по фрагментам',
-    icon: '/icons/guess-face.png',
+    icon: '/icons/guess-face.png', // Поддерживаются PNG, JPG, JPEG
   },
   {
     id: 'guess-melody',
     name: 'Угадай Мелодию',
     description: 'Узнай христианские гимны',
-    icon: '/icons/guess-melody.png',
+    icon: '/icons/guess-melody.png', // Поддерживаются PNG, JPG, JPEG
   },
   {
     id: 'bible-quotes',
     name: 'Библейские Цитаты',
     description: 'Продолжи цитату',
-    icon: '/icons/bible-quotes.png',
+    icon: '/icons/bible-quotes.png', // Поддерживаются PNG, JPG, JPEG
   },
   {
     id: 'guess-voice',
     name: 'Угадай, Кто Говорит',
     description: 'Узнай голос',
-    icon: '/icons/guess-voice.png',
+    icon: '/icons/guess-voice.png', // Поддерживаются PNG, JPG, JPEG
   },
   {
     id: 'calendar',
     name: 'Календарь',
     description: 'Угадай дату или день рождения',
-    icon: '/icons/calendar.png',
+    icon: '/icons/calendar.png', // Поддерживаются PNG, JPG, JPEG
   },
 ]
 

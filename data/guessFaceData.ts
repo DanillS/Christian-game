@@ -4,7 +4,7 @@
 export const guessFaceData: Record<string, any[]> = {
   easy: [
     {
-      image: '/images/faces/person1.jpg', // Замените на путь к вашей фотографии
+      image: '/images/faces/person1.jpg', // Замените на путь к вашей фотографии (PNG, JPG, JPEG)
       parts: ['nose', 'eyes', 'mouth', 'hands', 'full'],
       options: ['Иван', 'Мария', 'Петр', 'Анна'],
       correctAnswer: 'Иван',
