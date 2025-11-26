@@ -5,10 +5,9 @@ import { guessMelodyData } from '@/data/guessMelodyData'
 import { guessVoiceData } from '@/data/guessVoiceData'
 import { isSupabaseEnabled, supabaseRestRequest } from './supabaseClient'
 
-type Difficulty = 'easy' | 'medium' | 'hard'
 type RoundId = 'guess-face' | 'guess-melody' | 'bible-quotes' | 'guess-voice' | 'calendar'
 
-const fallbackMap: Record<RoundId, Record<string, any[]>> = {
+const fallbackMap: Record<RoundId, any[]> = {
   'guess-face': guessFaceData,
   'guess-melody': guessMelodyData,
   'bible-quotes': bibleQuotesData,
@@ -23,10 +22,9 @@ const tableMap: Partial<Record<RoundId, string>> = {
   'guess-voice': 'guess_voice_questions',
 }
 
-export async function loadRoundData(roundId: string, difficulty: string) {
+export async function loadRoundData(roundId: string) {
   const normalizedRound = (roundId as RoundId) || 'guess-face'
-  const normalizedDifficulty = (difficulty as Difficulty) || 'easy'
-  const fallback = fallbackMap[normalizedRound]?.[normalizedDifficulty] || []
+  const fallback = fallbackMap[normalizedRound] || []
 
   if (!isSupabaseEnabled() || !tableMap[normalizedRound]) {
     return fallback
@@ -36,7 +34,6 @@ export async function loadRoundData(roundId: string, difficulty: string) {
     const rows = await supabaseRestRequest<any[]>(tableMap[normalizedRound] as string, {
       searchParams: {
         select: '*',
-        difficulty: `eq.${normalizedDifficulty}`,
         order: 'created_at.asc',
       },
     })

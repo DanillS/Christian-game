@@ -28,7 +28,11 @@ export function isSupabaseEnabled() {
 }
 
 export function isVercelBlobEnabled() {
-  return Boolean(BLOB_READ_WRITE_TOKEN)
+  const enabled = Boolean(BLOB_READ_WRITE_TOKEN)
+  if (enabled && !BLOB_READ_WRITE_TOKEN.startsWith('vercel_blob_')) {
+    console.warn('[Vercel Blob] Токен не начинается с "vercel_blob_", возможно неверный формат')
+  }
+  return enabled
 }
 
 function buildBaseHeaders() {
@@ -189,7 +193,13 @@ async function vercelBlobUpload(
   contentType: string,
   options: { upsert?: boolean } = {}
 ): Promise<string> {
+  if (!BLOB_READ_WRITE_TOKEN) {
+    throw new Error('BLOB_READ_WRITE_TOKEN is not set')
+  }
+
   const cleanPath = objectPath.replace(/^\//, '')
+  
+  // Используем официальный API endpoint Vercel Blob
   const url = `https://blob.vercel-storage.com/${cleanPath}`
 
   // Преобразуем в Uint8Array для совместимости с fetch API
@@ -201,34 +211,49 @@ async function vercelBlobUpload(
       : new Uint8Array(file)
 
   const headers = new Headers()
+  // Vercel Blob требует токен в заголовке Authorization
   headers.set('Authorization', `Bearer ${BLOB_READ_WRITE_TOKEN}`)
+  headers.set('Content-Type', contentType || 'application/octet-stream')
   headers.set('x-content-type', contentType || 'application/octet-stream')
+  
   if (options.upsert) {
     headers.set('x-add-random-suffix', 'false')
   }
 
-  const response = await fetch(url, {
-    method: 'PUT',
-    headers,
-    body: body as BodyInit,
-    cache: 'no-store',
-  })
+  try {
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers,
+      body: body as BodyInit,
+      cache: 'no-store',
+    })
 
-  if (!response.ok) {
-    const errorText = await response.text()
-    console.error('[Vercel Blob] Upload failed:', response.status, errorText)
-    throw new Error(`Vercel Blob upload failed (${response.status}): ${errorText}`)
-  }
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('[Vercel Blob] Upload failed:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText,
+        url,
+        tokenLength: BLOB_READ_WRITE_TOKEN.length,
+        tokenPrefix: BLOB_READ_WRITE_TOKEN.substring(0, 20) + '...',
+      })
+      throw new Error(`Vercel Blob upload failed (${response.status}): ${errorText}`)
+    }
 
-  const result = await response.json()
-  // Vercel Blob возвращает URL в поле url
-  const blobUrl = result.url || result.path
-  if (!blobUrl) {
-    console.error('[Vercel Blob] Unexpected response:', result)
-    throw new Error('Vercel Blob did not return a URL')
+    const result = await response.json()
+    // Vercel Blob возвращает URL в поле url
+    const blobUrl = result.url || result.path || result
+    if (!blobUrl || typeof blobUrl !== 'string') {
+      console.error('[Vercel Blob] Unexpected response:', result)
+      throw new Error('Vercel Blob did not return a URL')
+    }
+    console.log('[Vercel Blob] Upload successful:', blobUrl)
+    return blobUrl
+  } catch (error) {
+    console.error('[Vercel Blob] Upload error:', error)
+    throw error
   }
-  console.log('[Vercel Blob] Upload successful:', blobUrl)
-  return blobUrl
 }
 
 export async function supabaseDelete(path: string, searchParams: Record<string, string>) {

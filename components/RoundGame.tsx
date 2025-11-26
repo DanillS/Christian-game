@@ -7,10 +7,10 @@ import GuessMelodyGame from './games/GuessMelodyGame'
 import BibleQuotesGame from './games/BibleQuotesGame'
 import GuessVoiceGame from './games/GuessVoiceGame'
 import CalendarGame from './games/CalendarGame'
+import { getRoundData } from '@/data/roundData'
 
 interface RoundGameProps {
   roundId: string
-  difficulty: string
   initialQuestionIndex: number
   onBack: () => void
   onQuestionComplete: (newIndex: number) => void
@@ -18,7 +18,6 @@ interface RoundGameProps {
 
 export default function RoundGame({
   roundId,
-  difficulty,
   initialQuestionIndex,
   onBack,
   onQuestionComplete,
@@ -31,25 +30,34 @@ export default function RoundGame({
 
   useEffect(() => {
     setScore(0)
-  }, [roundId, difficulty])
+  }, [roundId])
 
   useEffect(() => {
     let ignore = false
     const loadQuestions = async () => {
       setIsLoading(true)
       try {
-        const response = await fetch(`/api/round-data/${roundId}/${difficulty}`)
+        const response = await fetch(`/api/round-data/${roundId}`)
         if (!response.ok) {
           throw new Error('Failed to load round data')
         }
         const payload = await response.json()
         if (!ignore) {
-          setQuestions(Array.isArray(payload.questions) ? payload.questions : [])
+          const apiQuestions = Array.isArray(payload.questions) ? payload.questions : []
+          if (apiQuestions.length > 0) {
+            setQuestions(apiQuestions)
+          } else {
+            // Fallback на локальные данные
+            const localData = getRoundData(roundId)
+            setQuestions(localData)
+          }
         }
       } catch (error) {
         console.error('[RoundGame] Ошибка загрузки вопросов', error)
         if (!ignore) {
-          setQuestions([])
+          // Fallback на локальные данные
+          const localData = getRoundData(roundId)
+          setQuestions(localData)
         }
       } finally {
         if (!ignore) {
@@ -63,16 +71,16 @@ export default function RoundGame({
     return () => {
       ignore = true
     }
-  }, [roundId, difficulty])
+  }, [roundId])
 
   useEffect(() => {
-    const saved = localStorage.getItem(`used-${roundId}-${difficulty}`)
+    const saved = localStorage.getItem(`used-${roundId}`)
     if (saved) {
       setUsedQuestions(JSON.parse(saved))
     } else {
       setUsedQuestions([])
     }
-  }, [roundId, difficulty])
+  }, [roundId])
 
   useEffect(() => {
     setCurrentIndex(initialQuestionIndex)
@@ -108,12 +116,12 @@ export default function RoundGame({
     // Если все вопросы использованы, сбрасываем список
     if (newUsed.length >= questions.length) {
       setUsedQuestions([])
-      localStorage.removeItem(`used-${roundId}-${difficulty}`)
+      localStorage.removeItem(`used-${roundId}`)
       setCurrentIndex(0)
       onQuestionComplete(0)
     } else {
       setUsedQuestions(newUsed)
-      localStorage.setItem(`used-${roundId}-${difficulty}`, JSON.stringify(newUsed))
+      localStorage.setItem(`used-${roundId}`, JSON.stringify(newUsed))
       
       // Переходим к следующему вопросу (сбрасываем индекс, так как список доступных вопросов изменится)
       setCurrentIndex(0)
@@ -140,12 +148,12 @@ export default function RoundGame({
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center text-white">
-          <p className="text-2xl mb-4">Для выбранного уровня пока нет вопросов.</p>
+          <p className="text-2xl mb-4">Пока нет вопросов.</p>
           <button
             onClick={onBack}
             className="mt-4 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg transition-all backdrop-blur-md"
           >
-            ← Вернуться к выбору сложности
+            ← Назад
           </button>
         </div>
       </div>
@@ -194,12 +202,6 @@ export default function RoundGame({
     }
   }
 
-  const difficultyNames: Record<string, string> = {
-    easy: 'Легко',
-    medium: 'Средне',
-    hard: 'Тяжело',
-  }
-
   return (
     <div className="min-h-[600px] md:min-h-[800px] flex flex-col items-center justify-center px-4 py-6 md:py-8 relative">
       <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-20">
@@ -211,13 +213,8 @@ export default function RoundGame({
         >
           ← Назад
         </motion.button>
-        <div className="flex gap-2 md:gap-4">
-          <div className="bg-white/20 backdrop-blur-md text-white px-3 py-2 md:px-4 md:py-2 rounded-lg text-sm md:text-base">
-            Очки: <span className="font-bold">{score}</span>
-          </div>
-          <div className="bg-white/20 backdrop-blur-md text-white px-3 py-2 md:px-4 md:py-2 rounded-lg text-sm md:text-base">
-            {difficultyNames[difficulty] || difficulty}
-          </div>
+        <div className="bg-white/20 backdrop-blur-md text-white px-3 py-2 md:px-4 md:py-2 rounded-lg text-sm md:text-base">
+          Очки: <span className="font-bold">{score}</span>
         </div>
       </div>
 

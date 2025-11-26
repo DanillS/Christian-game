@@ -18,7 +18,8 @@ SUPABASE_URL=
 SUPABASE_ANON_KEY=           # для чтения данных
 SUPABASE_SERVICE_ROLE_KEY=   # для записи через бота
 SUPABASE_STORAGE_BUCKET=game-content (опционально)
-BLOB_READ_WRITE_TOKEN=       # токен Vercel Blob Storage (альтернатива Supabase Storage)
+BLOB_READ_WRITE_TOKEN=       # токен Vercel Blob Storage (формат: vercel_blob_rw_...)
+                              # Получить можно в Vercel Dashboard → Settings → Storage → Blob → Create Token
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_ADMIN_PASSWORD=
 TELEGRAM_SECRET_TOKEN=       # секрет для вебхука (опционально)
