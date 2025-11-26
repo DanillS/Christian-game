@@ -3,12 +3,12 @@ import { loadRoundData } from '@/lib/server/roundDataLoader'
 
 export async function GET(
   _request: Request,
-  context: { params: { roundId: string; difficulty: string } }
+  context: { params: { roundId: string } }
 ) {
-  const { roundId, difficulty } = context.params
+  const { roundId } = context.params
 
   try {
-    const questions = await loadRoundData(roundId, difficulty)
+    const questions = await loadRoundData(roundId)
     return NextResponse.json({ questions })
   } catch (error) {
     console.error('[round-data] error', error)
