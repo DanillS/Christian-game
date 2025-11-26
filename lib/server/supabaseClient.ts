@@ -112,24 +112,24 @@ export async function supabaseRestRequest<T = any>(
   }
 
   if (expect === 'void') {
-    return
+    return undefined as any
   }
 
   if (expect === 'text') {
-    return (await response.text()) as T
+    return (await response.text()) as any as T
   }
 
+  // expect === 'json'
   try {
     const text = await response.text()
     
     // Если ответ пустой - возвращаем подходящее значение
     if (!text.trim()) {
-      if (expect === 'json') return [] as T  // для SELECT запросов
-      return undefined as T
+      return [] as any as T  // для SELECT запросов
     }
     
     // Парсим JSON только если есть содержимое
-    return JSON.parse(text) as T
+    return JSON.parse(text) as any as T
   } catch (error) {
     console.error('[Supabase] JSON parse error:', error)
     throw new Error(`Supabase response parse error: ${error}`)
