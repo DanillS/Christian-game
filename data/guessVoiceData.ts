@@ -4,7 +4,7 @@
 
 export const guessVoiceData: any[] = [
   {
-    audioUrl: '/audio/voices/voice1.mp3', // Замените на путь к вашему аудиофайлу
+    audioUrl: '/audio/melodies/v_020.mp3', // Замените на путь к вашему аудиофайлу
     options: ['Иван', 'Мария', 'Петр', 'Анна'],
     correctAnswer: 'Иван',
   },
