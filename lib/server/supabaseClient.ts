@@ -297,7 +297,7 @@ export async function supabaseDelete(path: string, searchParams: Record<string, 
 
 // Добавьте эту функцию в конец файла supabaseClient.ts
 export async function updateAdminSession(userId: number) {
-  if (!isSupabaseEnabled()) return
+  if (!isSupabaseEnabled()) return {}
   
   const expiresAt = new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString()
   

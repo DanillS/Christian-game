@@ -10,31 +10,31 @@ const rounds = [
     id: 'guess-face',
     name: 'Угадай Лицо',
     description: 'Угадай по фрагментам',
-    icon: '/icons/guess-face', // Без расширения
+    icon: '/icons/guess-face',
   },
   {
     id: 'guess-melody',
     name: 'Угадай Мелодию', 
     description: 'Узнай христианские гимны',
-    icon: '/icons/guess-melody', // Без расширения
+    icon: '/icons/guess-melody',
   },
   {
     id: 'bible-quotes',
     name: 'Библейские Цитаты',
     description: 'Продолжи цитату',
-    icon: '/icons/bible-quotes', // Без расширения
+    icon: '/icons/bible-quotes',
   },
   {
     id: 'guess-voice',
     name: 'Угадай, Кто Говорит',
     description: 'Узнай голос',
-    icon: '/icons/guess-voice', // Без расширения
+    icon: '/icons/guess-voice',
   },
   {
     id: 'calendar',
     name: 'Календарь',
     description: 'Угадай дату или день рождения',
-    icon: '/icons/calendar', // Без расширения
+    icon: '/icons/calendar',
   },
 ]
 
@@ -54,25 +54,41 @@ function SmartRoundIcon({
   onError: () => void;
   [key: string]: any;
 }) {
-  const formats = ['.png', '.jpg', '.jpeg']
-  const [currentSrc, setCurrentSrc] = useState(customIcon || `${defaultIcon}.png`)
+  const formats = ['.png', '.jpg', '.jpeg', '.webp']
+  const [currentSrc, setCurrentSrc] = useState('')
   const [attempt, setAttempt] = useState(0)
 
+  useEffect(() => {
+    // Сначала пробуем кастомную иконку из blob storage
+    if (customIcon) {
+      setCurrentSrc(customIcon)
+    } else {
+      // Если кастомной нет, пробуем локальные файлы
+      setCurrentSrc(`${defaultIcon}${formats[0]}`)
+    }
+  }, [customIcon, defaultIcon])
+
   const handleError = () => {
-    // Если есть кастомная иконка и она не загрузилась - пробуем локальные форматы
+    // Если кастомная иконка не загрузилась - пробуем локальные форматы
     if (customIcon && attempt === 0) {
-      setCurrentSrc(`${defaultIcon}.png`)
+      setCurrentSrc(`${defaultIcon}${formats[0]}`)
       setAttempt(1)
     } 
     // Пробуем разные форматы локальных файлов
-    else if (attempt < formats.length) {
-      setCurrentSrc(`${defaultIcon}${formats[attempt]}`)
+    else if (attempt < formats.length - 1) {
+      setCurrentSrc(`${defaultIcon}${formats[attempt + 1]}`)
       setAttempt(attempt + 1)
     } else {
       // Все форматы провалились
       onError()
     }
   }
+
+  if (!currentSrc) return (
+    <div className="w-full h-full flex items-center justify-center bg-gray-200 rounded">
+      <span className="text-gray-400">...</span>
+    </div>
+  )
 
   return (
     <Image
@@ -92,20 +108,33 @@ export default function RoundSelector() {
   const router = useRouter()
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
   const [customIcons, setCustomIcons] = useState<Record<string, string>>({})
+  const [iconsLoaded, setIconsLoaded] = useState(false)
 
   useEffect(() => {
     let ignore = false
 
     const loadIcons = async () => {
       try {
+        console.log('[RoundSelector] Загрузка кастомных иконок...')
         const response = await fetch('/api/round-icons')
-        if (!response.ok) return
+        
+        if (!response.ok) {
+          console.warn('[RoundSelector] API недоступен, используем локальные иконки')
+          setIconsLoaded(true)
+          return
+        }
+        
         const payload = await response.json()
+        console.log('[RoundSelector] Получены иконки:', payload)
+        
         if (!ignore && payload?.icons) {
           setCustomIcons(payload.icons)
         }
+        
+        setIconsLoaded(true)
       } catch (error) {
         console.error('[RoundSelector] Не удалось загрузить иконки', error)
+        setIconsLoaded(true)
       }
     }
 
@@ -115,6 +144,11 @@ export default function RoundSelector() {
       ignore = true
     }
   }, [])
+
+  const handleImageError = (roundId: string) => {
+    console.warn(`[RoundSelector] Ошибка загрузки иконки для ${roundId}`)
+    setImageErrors((prev) => ({ ...prev, [roundId]: true }))
+  }
 
   return (
     <div className="min-h-[600px] md:min-h-[800px] flex flex-col items-center justify-center px-4 py-6 md:py-8 relative z-10">
@@ -140,17 +174,22 @@ export default function RoundSelector() {
           >
             <div className="flex flex-col items-center text-center">
               <div className="w-16 h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 bg-white/20 rounded-full flex items-center justify-center mb-2 md:mb-4 relative overflow-hidden">
-                {imageErrors[round.id] ? (
+                {!iconsLoaded ? (
+                  // Пока загружаются иконки
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-white/60 text-sm">...</span>
+                  </div>
+                ) : imageErrors[round.id] ? (
+                  // Fallback эмодзи при ошибках
                   <span className="text-4xl">🎄</span>
                 ) : (
+                  // Умный компонент иконки
                   <SmartRoundIcon 
                     roundId={round.id}
                     customIcon={customIcons[round.id]}
                     defaultIcon={round.icon}
                     alt={round.name}
-                    onError={() => {
-                      setImageErrors((prev) => ({ ...prev, [round.id]: true }))
-                    }}
+                    onError={() => handleImageError(round.id)}
                   />
                 )}
               </div>

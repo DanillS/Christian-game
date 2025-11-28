@@ -6,7 +6,8 @@ interface IconRow {
 }
 
 export async function fetchRoundIcons() {
-  if (!isSupabaseEnabled()) {
+  // Если Supabase включен, пытаемся получить иконки из базы
+  if (isSupabaseEnabled()) {
     try {
       const rows = await supabaseRestRequest<IconRow[]>('round_icons', {
         searchParams: {
@@ -21,11 +22,11 @@ export async function fetchRoundIcons() {
         return acc
       }, {})
     } catch (error) {
-      console.error('[roundIcons] Failed to load icons', error)
+      console.error('[roundIcons] Failed to load icons from Supabase', error)
       return {}
     }
   }
 
-  
+  // Если Supabase отключен, возвращаем пустой объект
+  return {}
 }
-
