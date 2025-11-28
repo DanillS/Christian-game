@@ -295,3 +295,25 @@ export async function supabaseDelete(path: string, searchParams: Record<string, 
   })
 }
 
+// Добавьте эту функцию в конец файла supabaseClient.ts
+export async function updateAdminSession(userId: number) {
+  if (!isSupabaseEnabled()) return
+  
+  const expiresAt = new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString()
+  
+  try {
+    await supabaseRestRequest('admin_sessions', {
+      method: 'POST',
+      searchParams: { on_conflict: 'telegram_user_id' },
+      headers: { Prefer: 'resolution=merge-duplicates' },
+      body: {
+        telegram_user_id: userId,
+        expires_at: expiresAt,
+      },
+    })
+    console.log('[Supabase] Сессия обновлена для пользователя:', userId)
+  } catch (error) {
+    console.error('[Supabase] Ошибка обновления сессии', error)
+  }
+}
+
