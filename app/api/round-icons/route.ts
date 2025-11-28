@@ -1,6 +1,6 @@
 // app/api/round-icons/route.ts
 import { NextResponse } from 'next/server'
-import { fetchRoundIcons } from '/lib/server/roundIcons'
+import { fetchRoundIcons } from '@/lib/server/roundIcons'
 
 export async function GET() {
   try {
