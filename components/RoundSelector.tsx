@@ -10,33 +10,83 @@ const rounds = [
     id: 'guess-face',
     name: 'Угадай Лицо',
     description: 'Угадай по фрагментам',
-    icon: '/icons/guess-face.png', // Поддерживаются PNG, JPG, JPEG
+    icon: '/icons/guess-face', // Без расширения
   },
   {
     id: 'guess-melody',
-    name: 'Угадай Мелодию',
+    name: 'Угадай Мелодию', 
     description: 'Узнай христианские гимны',
-    icon: '/icons/guess-melody.png', // Поддерживаются PNG, JPG, JPEG
+    icon: '/icons/guess-melody', // Без расширения
   },
   {
     id: 'bible-quotes',
     name: 'Библейские Цитаты',
     description: 'Продолжи цитату',
-    icon: '/icons/bible-quotes.png', // Поддерживаются PNG, JPG, JPEG
+    icon: '/icons/bible-quotes', // Без расширения
   },
   {
     id: 'guess-voice',
     name: 'Угадай, Кто Говорит',
     description: 'Узнай голос',
-    icon: '/icons/guess-voice.png', // Поддерживаются PNG, JPG, JPEG
+    icon: '/icons/guess-voice', // Без расширения
   },
   {
     id: 'calendar',
     name: 'Календарь',
     description: 'Угадай дату или день рождения',
-    icon: '/icons/calendar.png', // Поддерживаются PNG, JPG, JPEG
+    icon: '/icons/calendar', // Без расширения
   },
 ]
+
+// Умный компонент для загрузки иконок с поддержкой форматов
+function SmartRoundIcon({ 
+  roundId, 
+  customIcon, 
+  defaultIcon, 
+  alt, 
+  onError,
+  ...props 
+}: { 
+  roundId: string;
+  customIcon?: string;
+  defaultIcon: string;
+  alt: string;
+  onError: () => void;
+  [key: string]: any;
+}) {
+  const formats = ['.png', '.jpg', '.jpeg']
+  const [currentSrc, setCurrentSrc] = useState(customIcon || `${defaultIcon}.png`)
+  const [attempt, setAttempt] = useState(0)
+
+  const handleError = () => {
+    // Если есть кастомная иконка и она не загрузилась - пробуем локальные форматы
+    if (customIcon && attempt === 0) {
+      setCurrentSrc(`${defaultIcon}.png`)
+      setAttempt(1)
+    } 
+    // Пробуем разные форматы локальных файлов
+    else if (attempt < formats.length) {
+      setCurrentSrc(`${defaultIcon}${formats[attempt]}`)
+      setAttempt(attempt + 1)
+    } else {
+      // Все форматы провалились
+      onError()
+    }
+  }
+
+  return (
+    <Image
+      src={currentSrc}
+      alt={alt}
+      width={80}
+      height={80}
+      className="object-contain"
+      unoptimized
+      onError={handleError}
+      {...props}
+    />
+  )
+}
 
 export default function RoundSelector() {
   const router = useRouter()
@@ -93,13 +143,11 @@ export default function RoundSelector() {
                 {imageErrors[round.id] ? (
                   <span className="text-4xl">🎄</span>
                 ) : (
-                  <Image
-                    src={customIcons[round.id] || round.icon}
+                  <SmartRoundIcon 
+                    roundId={round.id}
+                    customIcon={customIcons[round.id]}
+                    defaultIcon={round.icon}
                     alt={round.name}
-                    width={80}
-                    height={80}
-                    className="object-contain"
-                    unoptimized
                     onError={() => {
                       setImageErrors((prev) => ({ ...prev, [round.id]: true }))
                     }}
@@ -119,4 +167,3 @@ export default function RoundSelector() {
     </div>
   )
 }
-
