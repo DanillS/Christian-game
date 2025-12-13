@@ -130,7 +130,7 @@ export async function POST(request: Request) {
 }
 
 async function processUpdate(update: TelegramUpdate) {
-  // Обработка callback_query (нажатия на inline кнопки)
+  // Обработка callback_query (нажатия на inline кнопки) - оставляем для обратной совместимости
   if (update.callback_query) {
     await handleCallbackQuery(update.callback_query);
     return;
@@ -152,6 +152,259 @@ async function processUpdate(update: TelegramUpdate) {
     text.substring(0, 100)
   );
 
+  // Обработка текстовых команд и reply кнопок
+  if (text) {
+    // Обработка команды /start
+    if (text === "/start") {
+      await sendTelegramMessage(
+        chatId,
+        getWelcomeText(),
+        getMainMenuKeyboard()
+      );
+      return;
+    }
+
+    // Обработка команды /login <пароль>
+    if (text.startsWith("/login ")) {
+      const password = text.replace("/login ", "").trim();
+      if (userId) {
+        userStates.set(userId, { type: "login", step: "password", data: {} });
+        await handleLoginStep(
+          { ...message, text: password } as TelegramMessage,
+          { type: "login", step: "password", data: {} }
+        );
+      }
+      return;
+    }
+
+    // Обработка reply кнопок главного меню
+    if (text === "👤 Угадай лицо") {
+      if (userId) {
+        const mockMessage = {
+          from: message.from,
+          chat: message.chat,
+        } as TelegramMessage;
+        await startAddFace(mockMessage);
+      }
+      return;
+    }
+
+    if (text === "🎵 Угадай мелодию") {
+      if (userId) {
+        const mockMessage = {
+          from: message.from,
+          chat: message.chat,
+        } as TelegramMessage;
+        await startAddMelody(mockMessage);
+      }
+      return;
+    }
+
+    if (text === "🎤 Угадай голос") {
+      if (userId) {
+        const mockMessage = {
+          from: message.from,
+          chat: message.chat,
+        } as TelegramMessage;
+        await startAddVoice(mockMessage);
+      }
+      return;
+    }
+
+    if (text === "📖 Библейская цитата") {
+      if (userId) {
+        const mockMessage = {
+          from: message.from,
+          chat: message.chat,
+        } as TelegramMessage;
+        await startAddQuote(mockMessage);
+      }
+      return;
+    }
+
+    if (text === "🖼️ Добавить иконку") {
+      if (userId) {
+        userStates.set(userId, {
+          type: "add_icon",
+          step: "waiting_round",
+          data: {},
+        });
+        await sendTelegramMessage(
+          chatId,
+          "Выберите раунд для иконки:",
+          getRoundIconKeyboard()
+        );
+      }
+      return;
+    }
+
+    if (text === "📊 Статус") {
+      await handleStatus(chatId);
+      return;
+    }
+
+    if (text === "🔐 Войти") {
+      if (userId) {
+        userStates.set(userId, { type: "login", step: "password", data: {} });
+        await sendTelegramMessage(
+          chatId,
+          "🔐 Введите пароль администратора:",
+          getCancelKeyboard()
+        );
+      }
+      return;
+    }
+
+    if (text === "🚪 Выйти") {
+      await handleLogout(message);
+      return;
+    }
+
+    // Обработка кнопок выбора раунда для иконки (проверяем состояние текущего пользователя)
+    if (userId) {
+      const state = userStates.get(userId);
+      if (state?.type === "add_icon" && state.step === "waiting_round") {
+        if (text === "👤 Угадай лицо") {
+          state.step = "waiting_file";
+          state.data.roundId = "guess-face";
+          await sendTelegramMessage(
+            chatId,
+            '🖼️ Добавление иконки для раунда "guess-face"\n\n📸 Прикрепите изображение (PNG, JPG, JPEG):',
+            getCancelKeyboard()
+          );
+          return;
+        }
+        if (text === "🎵 Угадай мелодию") {
+          state.step = "waiting_file";
+          state.data.roundId = "guess-melody";
+          await sendTelegramMessage(
+            chatId,
+            '🖼️ Добавление иконки для раунда "guess-melody"\n\n📸 Прикрепите изображение (PNG, JPG, JPEG):',
+            getCancelKeyboard()
+          );
+          return;
+        }
+        if (text === "📖 Библейские цитаты") {
+          state.step = "waiting_file";
+          state.data.roundId = "bible-quotes";
+          await sendTelegramMessage(
+            chatId,
+            '🖼️ Добавление иконки для раунда "bible-quotes"\n\n📸 Прикрепите изображение (PNG, JPG, JPEG):',
+            getCancelKeyboard()
+          );
+          return;
+        }
+        if (text === "🎤 Угадай голос") {
+          state.step = "waiting_file";
+          state.data.roundId = "guess-voice";
+          await sendTelegramMessage(
+            chatId,
+            '🖼️ Добавление иконки для раунда "guess-voice"\n\n📸 Прикрепите изображение (PNG, JPG, JPEG):',
+            getCancelKeyboard()
+          );
+          return;
+        }
+        if (text === "📅 Календарь") {
+          state.step = "waiting_file";
+          state.data.roundId = "calendar";
+          await sendTelegramMessage(
+            chatId,
+            '🖼️ Добавление иконки для раунда "calendar"\n\n📸 Прикрепите изображение (PNG, JPG, JPEG):',
+            getCancelKeyboard()
+          );
+          return;
+        }
+      }
+    }
+
+    // Обработка кнопки "Готово" для вариантов ответов
+    if (text === "✅ Готово (минимум 2 варианта)") {
+      if (userId) {
+        const state = userStates.get(userId);
+        if (state && state.step === "options") {
+          if (!state.data.options || state.data.options.length < 2) {
+            await sendTelegramMessage(
+              chatId,
+              "❌ Нужно минимум 2 варианта ответа. Введите еще варианты.",
+              getCancelKeyboard()
+            );
+            return;
+          }
+          state.step = "correctAnswer";
+          await processStateStep(chatId, userId, state);
+        }
+      }
+      return;
+    }
+
+    // Обработка кнопки отмены
+    if (text === "❌ Отмена") {
+      if (userId) {
+        userStates.delete(userId);
+        await sendTelegramMessage(
+          chatId,
+          "❌ Отменено.",
+          getMainMenuKeyboard()
+        );
+      }
+      return;
+    }
+
+    // Обработка кнопок для типов вопросов
+    if (text === "📖 Источник") {
+      if (userId) {
+        const state = userStates.get(userId);
+        if (state && state.type === "add_quote") {
+          state.step = "source";
+          await sendTelegramMessage(
+            chatId,
+            "📝 Шаг 4/5: Введите источник цитаты:",
+            getCancelKeyboard()
+          );
+        }
+      }
+      return;
+    }
+
+    if (text === "➡️ Продолжить") {
+      if (userId) {
+        const state = userStates.get(userId);
+        if (state && state.type === "add_quote") {
+          state.step = "finalize";
+          await processStateStep(chatId, userId, state);
+        }
+      }
+      return;
+    }
+
+    // Обработка команды /status
+    if (text === "/status") {
+      await handleStatus(chatId);
+      return;
+    }
+
+    // Обработка команды /add_face и других команд добавления
+    if (text.startsWith("/add_")) {
+      const type = text.replace("/add_", "").trim();
+      if (userId) {
+        const mockMessage = {
+          from: message.from,
+          chat: message.chat,
+        } as TelegramMessage;
+        if (type === "face") {
+          await startAddFace(mockMessage);
+        } else if (type === "melody") {
+          await startAddMelody(mockMessage);
+        } else if (type === "voice") {
+          await startAddVoice(mockMessage);
+        } else if (type === "quote") {
+          await startAddQuote(mockMessage);
+        }
+      }
+      return;
+    }
+  }
+
   // Проверяем, есть ли активное состояние для пользователя
   if (userId) {
     const state = userStates.get(userId);
@@ -166,6 +419,13 @@ async function processUpdate(update: TelegramUpdate) {
       await handleLoginStep(message, state);
       return;
     }
+  }
+
+  // Если нет активного состояния и это текстовое сообщение - игнорируем
+  // Главное меню показывается только через кнопки
+  if (text) {
+    // Игнорируем текстовые сообщения без активного состояния
+    return;
   }
 
   // Если нет активного состояния - показываем главное меню
@@ -229,6 +489,11 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
   }
 
   if (data === "menu_icon") {
+    userStates.set(userId, {
+      type: "add_icon",
+      step: "waiting_round",
+      data: {},
+    });
     await sendTelegramMessage(
       chatId,
       "Выберите раунд для иконки:",
@@ -456,15 +721,16 @@ async function handleStateStep(message: TelegramMessage, state: UserState) {
       state.data.options.push(text);
       const count = state.data.options.length;
       const keyboard = {
-        inline_keyboard: [
+        keyboard: [
           [
             {
               text: "✅ Готово (минимум 2 варианта)",
-              callback_data: "done_options",
             },
           ],
-          [{ text: "❌ Отмена", callback_data: "cancel" }],
+          [{ text: "❌ Отмена" }],
         ],
+        resize_keyboard: true,
+        one_time_keyboard: false,
       };
       await sendTelegramMessage(
         chatId,
@@ -503,15 +769,16 @@ async function handleStateStep(message: TelegramMessage, state: UserState) {
       state.data.quote = text;
       state.step = "options";
       const keyboard = {
-        inline_keyboard: [
+        keyboard: [
           [
             {
               text: "✅ Готово (минимум 2 варианта)",
-              callback_data: "done_options",
             },
           ],
-          [{ text: "❌ Отмена", callback_data: "cancel" }],
+          [{ text: "❌ Отмена" }],
         ],
+        resize_keyboard: true,
+        one_time_keyboard: false,
       };
       await sendTelegramMessage(
         chatId,
@@ -1032,13 +1299,43 @@ async function handleLoginStep(message: TelegramMessage, state: UserState) {
       // Игнорируем отсутствие записей
     }
 
-    await supabaseRestRequest("admin_sessions", {
+    const result = await supabaseRestRequest("admin_sessions", {
       method: "POST",
       body: {
         telegram_user_id: userId,
         expires_at: expiresAt,
       },
     });
+
+    console.log(
+      `[Telegram] Сессия сохранена для userId: ${userId}, expires_at: ${expiresAt}, результат:`,
+      result
+    );
+
+    // Небольшая задержка для обеспечения консистентности Supabase
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // Проверяем, что сессия действительно сохранилась
+    const verifySessions = await supabaseRestRequest<any[]>("admin_sessions", {
+      searchParams: {
+        select: "expires_at",
+        telegram_user_id: `eq.${userId}`,
+        order: "expires_at.desc",
+        limit: "1",
+      },
+    });
+
+    if (!verifySessions || verifySessions.length === 0) {
+      console.error(
+        `[Telegram] ОШИБКА: Сессия не найдена сразу после сохранения для userId: ${userId}`
+      );
+      await sendTelegramMessage(
+        chatId,
+        "⚠️ Сессия сохранена, но требуется повторная проверка. Попробуйте выполнить действие еще раз.",
+        getMainMenuKeyboard()
+      );
+      return;
+    }
 
     userStates.delete(userId);
     await sendTelegramMessage(
@@ -1109,8 +1406,33 @@ async function ensureAuthorized(message: TelegramMessage) {
       },
     });
 
+    console.log(
+      `[Telegram] Проверка сессии для userId: ${userId}, найдено сессий: ${
+        sessions?.length || 0
+      }`
+    );
+
     const session = sessions?.[0];
-    if (!session || new Date(session.expires_at).getTime() < Date.now()) {
+    if (!session) {
+      console.log(`[Telegram] Сессия не найдена для userId: ${userId}`);
+      await sendTelegramMessage(
+        chatId,
+        '🔐 Требуется авторизация. Нажмите кнопку "Войти" в меню.',
+        getMainMenuKeyboard()
+      );
+      return false;
+    }
+
+    const expiresAt = new Date(session.expires_at).getTime();
+    const now = Date.now();
+    console.log(
+      `[Telegram] Сессия найдена, expires_at: ${
+        session.expires_at
+      }, сейчас: ${new Date().toISOString()}, истекла: ${expiresAt < now}`
+    );
+
+    if (expiresAt < now) {
+      console.log(`[Telegram] Сессия истекла для userId: ${userId}`);
       await sendTelegramMessage(
         chatId,
         '🔐 Требуется авторизация. Нажмите кнопку "Войти" в меню.',
@@ -1121,6 +1443,7 @@ async function ensureAuthorized(message: TelegramMessage) {
 
     // 🔥 ПРАВИЛЬНОЕ МЕСТО ДЛЯ ОБНОВЛЕНИЯ СЕССИИ
     await updateAdminSession(userId);
+    console.log(`[Telegram] Авторизация успешна для userId: ${userId}`);
     return true;
   } catch (error) {
     console.error("[Telegram] Проверка авторизации", error);
@@ -1291,22 +1614,14 @@ async function answerCallbackQuery(
 
 function getMainMenuKeyboard() {
   return {
-    inline_keyboard: [
-      [
-        { text: "👤 Угадай лицо", callback_data: "add_face" },
-        { text: "🎵 Угадай мелодию", callback_data: "add_melody" },
-      ],
-      [
-        { text: "🎤 Угадай голос", callback_data: "add_voice" },
-        { text: "📖 Библейская цитата", callback_data: "add_quote" },
-      ],
-      [{ text: "🖼️ Добавить иконку", callback_data: "menu_icon" }],
-      [
-        { text: "📊 Статус", callback_data: "menu_status" },
-        { text: "🔐 Войти", callback_data: "menu_login" },
-        { text: "🚪 Выйти", callback_data: "menu_logout" },
-      ],
+    keyboard: [
+      [{ text: "👤 Угадай лицо" }, { text: "🎵 Угадай мелодию" }],
+      [{ text: "🎤 Угадай голос" }, { text: "📖 Библейская цитата" }],
+      [{ text: "🖼️ Добавить иконку" }],
+      [{ text: "📊 Статус" }, { text: "🔐 Войти" }, { text: "🚪 Выйти" }],
     ],
+    resize_keyboard: true,
+    one_time_keyboard: false,
   };
 }
 
@@ -1314,54 +1629,44 @@ function getMainMenuKeyboard() {
 
 function getQuestionTypeKeyboard(callbackPrefix: string) {
   return {
-    inline_keyboard: [
-      [
-        { text: "📖 Источник", callback_data: `${callbackPrefix}_source` },
-        { text: "➡️ Продолжить", callback_data: `${callbackPrefix}_continue` },
-      ],
-      [{ text: "❌ Отмена", callback_data: "cancel" }],
+    keyboard: [
+      [{ text: "📖 Источник" }, { text: "➡️ Продолжить" }],
+      [{ text: "❌ Отмена" }],
     ],
+    resize_keyboard: true,
+    one_time_keyboard: false,
   };
 }
 
 function getRoundIconKeyboard() {
   return {
-    inline_keyboard: [
-      [
-        { text: "👤 Угадай лицо", callback_data: "icon_guess-face" },
-        { text: "🎵 Угадай мелодию", callback_data: "icon_guess-melody" },
-      ],
-      [
-        { text: "📖 Библейские цитаты", callback_data: "icon_bible-quotes" },
-        { text: "🎤 Угадай голос", callback_data: "icon_guess-voice" },
-      ],
-      [
-        { text: "📅 Календарь", callback_data: "icon_calendar" },
-        { text: "❌ Отмена", callback_data: "cancel" },
-      ],
+    keyboard: [
+      [{ text: "👤 Угадай лицо" }, { text: "🎵 Угадай мелодию" }],
+      [{ text: "📖 Библейские цитаты" }, { text: "🎤 Угадай голос" }],
+      [{ text: "📅 Календарь" }, { text: "❌ Отмена" }],
     ],
+    resize_keyboard: true,
+    one_time_keyboard: false,
   };
 }
 
 function getAddQuestionTypeKeyboard() {
   return {
-    inline_keyboard: [
-      [
-        { text: "👤 Угадай лицо", callback_data: "add_face" },
-        { text: "🎵 Угадай мелодию", callback_data: "add_melody" },
-      ],
-      [
-        { text: "🎤 Угадай голос", callback_data: "add_voice" },
-        { text: "📖 Библейская цитата", callback_data: "add_quote" },
-      ],
-      [{ text: "❌ Отмена", callback_data: "cancel" }],
+    keyboard: [
+      [{ text: "👤 Угадай лицо" }, { text: "🎵 Угадай мелодию" }],
+      [{ text: "🎤 Угадай голос" }, { text: "📖 Библейская цитата" }],
+      [{ text: "❌ Отмена" }],
     ],
+    resize_keyboard: true,
+    one_time_keyboard: false,
   };
 }
 
 function getCancelKeyboard() {
   return {
-    inline_keyboard: [[{ text: "❌ Отмена", callback_data: "cancel" }]],
+    keyboard: [[{ text: "❌ Отмена" }]],
+    resize_keyboard: true,
+    one_time_keyboard: false,
   };
 }
 

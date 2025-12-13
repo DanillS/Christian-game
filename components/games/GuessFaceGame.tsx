@@ -90,7 +90,6 @@ export default function GuessFaceGame({
             height={320}
             className="object-cover w-full h-full"
             unoptimized
-            key={question?.image}
           />
         </div>
 

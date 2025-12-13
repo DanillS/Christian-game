@@ -23,16 +23,12 @@ export default function RoundGame({
   onQuestionComplete,
 }: RoundGameProps) {
   const [currentIndex, setCurrentIndex] = useState(initialQuestionIndex)
-  const [score, setScore] = useState(0)
   const [usedQuestions, setUsedQuestions] = useState<number[]>([])
   const [questions, setQuestions] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [answers, setAnswers] = useState<Map<number, string>>(new Map()) // Сохраняем правильный ответ для каждого вопроса
   const [wrongAnswers, setWrongAnswers] = useState<Map<number, string[]>>(new Map()) // Сохраняем все неправильные ответы для каждого вопроса
 
-  useEffect(() => {
-    setScore(0)
-  }, [roundId])
 
   useEffect(() => {
     let ignore = false
@@ -119,8 +115,6 @@ export default function RoundGame({
     if (originalIndex === -1) return
     
     if (isCorrect) {
-      setScore(prev => prev + 10)
-      
       // Сохраняем правильный ответ
       setAnswers(prev => {
         const newAnswers = new Map(prev)
@@ -276,7 +270,7 @@ export default function RoundGame({
 
   return (
     <div className="min-h-[600px] md:min-h-[800px] flex flex-col items-center justify-center px-4 py-6 md:py-8 relative">
-      <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-20">
+      <div className="absolute top-4 left-4 z-20">
         <motion.button
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -285,9 +279,6 @@ export default function RoundGame({
         >
           ← Назад
         </motion.button>
-        <div className="bg-white/20 backdrop-blur-md text-white px-3 py-2 md:px-4 md:py-2 rounded-lg text-sm md:text-base">
-          Очки: <span className="font-bold">{score}</span>
-        </div>
       </div>
 
       <AnimatePresence mode="wait">

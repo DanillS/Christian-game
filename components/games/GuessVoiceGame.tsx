@@ -14,10 +14,15 @@ export default function GuessVoiceGame({ question, onAnswer }: GuessVoiceGamePro
   const [showResult, setShowResult] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
 
-  const handlePlay = () => {
+  const handlePlay = async () => {
     if (audioRef.current) {
-      audioRef.current.play()
-      setIsPlaying(true)
+      try {
+        await audioRef.current.play()
+        setIsPlaying(true)
+      } catch (error) {
+        console.error('Ошибка воспроизведения аудио:', error)
+        setIsPlaying(false)
+      }
     }
   }
 
@@ -62,6 +67,10 @@ export default function GuessVoiceGame({ question, onAnswer }: GuessVoiceGamePro
               ref={audioRef}
               src={question.audioUrl}
               onEnded={() => setIsPlaying(false)}
+              onError={(e) => {
+                console.error('Ошибка загрузки аудио:', e)
+                setIsPlaying(false)
+              }}
             />
             <div className="flex gap-4">
               <motion.button
