@@ -915,13 +915,13 @@ async function handleStateStep(message: TelegramMessage, state: UserState) {
       if (text) {
         await sendTelegramMessage(
           chatId,
-          "❌ На этом шаге нужен аудиофайл (MP3 или OGG), а не текст. Прикрепите аудио.",
+          "❌ На этом шаге нужен аудиофайл (MP3 или OGA), а не текст. Прикрепите аудио.",
           getCancelKeyboard()
         );
       } else {
         await sendTelegramMessage(
           chatId,
-          "❌ Прикрепите аудиофайл (MP3 или OGG).",
+          "❌ Прикрепите аудиофайл (MP3 или OGA).",
           getCancelKeyboard()
         );
       }
@@ -994,7 +994,7 @@ async function processStateStep(
     const questionType = state.type === "add_melody" ? "мелодию" : "голос";
     await sendTelegramMessage(
       chatId,
-      `📝 Шаг 3/3: Прикрепите аудиофайл (MP3 или OGG) с ${questionType}:`,
+      `📝 Шаг 3/3: Прикрепите аудиофайл (MP3 или OGA) с ${questionType}:`,
       getCancelKeyboard()
     );
   } else if (state.step === "source") {
@@ -1189,26 +1189,39 @@ async function saveMelodyQuestion(chatId: number, state: UserState) {
   const file = await downloadTelegramFile(state.data.fileId);
   const timestamp = Date.now();
   // Определяем расширение из имени файла или MIME типа
-  let extension = file.extension;
-  if (!extension) {
-    // Если расширение не определено, пытаемся определить по MIME типу
-    const mimeType = (file.mimeType || "").toLowerCase();
-    if (
-      mimeType.includes("ogg") ||
-      mimeType.includes("vorbis") ||
-      mimeType.includes("opus")
-    ) {
-      extension = "ogg";
-    } else {
-      extension = "mp3"; // По умолчанию MP3
+  let extension = file.extension?.toLowerCase();
+  let mimeType = file.mimeType || "application/octet-stream";
+
+  // Нормализуем расширения OGG в OGA
+  if (extension === "oga" || extension === "ogg") {
+    extension = "oga";
+    if (!mimeType.includes("ogg")) {
+      mimeType = "audio/ogg";
     }
   }
+
+  if (!extension) {
+    // Если расширение не определено, пытаемся определить по MIME типу
+    const mimeLower = mimeType.toLowerCase();
+    if (
+      mimeLower.includes("ogg") ||
+      mimeLower.includes("vorbis") ||
+      mimeLower.includes("opus")
+    ) {
+      extension = "oga";
+      mimeType = "audio/ogg";
+    } else {
+      extension = "mp3"; // По умолчанию MP3
+      mimeType = "audio/mpeg";
+    }
+  }
+
   const objectPath = `audio/melodies/${state.data.difficulty}/${timestamp}.${extension}`;
 
   const publicUrl = await supabaseStorageUpload(
     objectPath,
     file.buffer,
-    file.mimeType,
+    mimeType,
     {
       upsert: false,
     }
@@ -1235,26 +1248,39 @@ async function saveVoiceQuestion(chatId: number, state: UserState) {
   const file = await downloadTelegramFile(state.data.fileId);
   const timestamp = Date.now();
   // Определяем расширение из имени файла или MIME типа
-  let extension = file.extension;
-  if (!extension) {
-    // Если расширение не определено, пытаемся определить по MIME типу
-    const mimeType = (file.mimeType || "").toLowerCase();
-    if (
-      mimeType.includes("ogg") ||
-      mimeType.includes("vorbis") ||
-      mimeType.includes("opus")
-    ) {
-      extension = "ogg";
-    } else {
-      extension = "mp3"; // По умолчанию MP3
+  let extension = file.extension?.toLowerCase();
+  let mimeType = file.mimeType || "application/octet-stream";
+
+  // Нормализуем расширения OGG в OGA
+  if (extension === "oga" || extension === "ogg") {
+    extension = "oga";
+    if (!mimeType.includes("ogg")) {
+      mimeType = "audio/ogg";
     }
   }
+
+  if (!extension) {
+    // Если расширение не определено, пытаемся определить по MIME типу
+    const mimeLower = mimeType.toLowerCase();
+    if (
+      mimeLower.includes("ogg") ||
+      mimeLower.includes("vorbis") ||
+      mimeLower.includes("opus")
+    ) {
+      extension = "oga";
+      mimeType = "audio/ogg";
+    } else {
+      extension = "mp3"; // По умолчанию MP3
+      mimeType = "audio/mpeg";
+    }
+  }
+
   const objectPath = `audio/voices/${state.data.difficulty}/${timestamp}.${extension}`;
 
   const publicUrl = await supabaseStorageUpload(
     objectPath,
     file.buffer,
-    file.mimeType,
+    mimeType,
     {
       upsert: false,
     }
