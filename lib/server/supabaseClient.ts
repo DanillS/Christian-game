@@ -280,17 +280,46 @@ async function vercelBlobUpload(
     }
 
     const result = await response.json()
-    console.log('[Vercel Blob] Upload response:', result)
-    // Vercel Blob возвращает URL в поле url
-    const blobUrl = result.url || result.path || (typeof result === 'string' ? result : null)
+    console.log('[Vercel Blob] Upload response:', JSON.stringify(result, null, 2))
+    
+    // Vercel Blob возвращает URL в поле url или downloadUrl
+    const blobUrl = result.url || result.downloadUrl || result.path || (typeof result === 'string' ? result : null)
     if (!blobUrl || typeof blobUrl !== 'string') {
-      console.error('[Vercel Blob] Unexpected response:', result)
+      console.error('[Vercel Blob] Unexpected response:', JSON.stringify(result, null, 2))
       throw new Error('Vercel Blob did not return a URL')
     }
     
     // Убеждаемся, что URL полный (начинается с http:// или https://)
-    const finalUrl = blobUrl.startsWith('http') ? blobUrl : `https://${blobUrl}`
-    console.log('[Vercel Blob] Upload successful:', finalUrl)
+    let finalUrl = blobUrl.startsWith('http') ? blobUrl : `https://${blobUrl}`
+    
+    // Если URL содержит blob.vercel-storage.com, но не содержит .public., добавляем .public.
+    // Vercel Blob может возвращать URL без .public., но для публичного доступа нужен .public.
+    if (finalUrl.includes('blob.vercel-storage.com') && !finalUrl.includes('.public.')) {
+      finalUrl = finalUrl.replace('blob.vercel-storage.com', 'public.blob.vercel-storage.com')
+    }
+    
+    console.log('[Vercel Blob] Upload successful:', {
+      originalUrl: blobUrl,
+      finalUrl: finalUrl,
+      contentType: finalContentType,
+    })
+    
+    // Проверяем доступность файла
+    try {
+      const testResponse = await fetch(finalUrl, { method: 'HEAD', cache: 'no-store' })
+      if (!testResponse.ok) {
+        console.warn('[Vercel Blob] File may not be publicly accessible:', {
+          url: finalUrl,
+          status: testResponse.status,
+          statusText: testResponse.statusText,
+        })
+      } else {
+        console.log('[Vercel Blob] File is publicly accessible:', finalUrl)
+      }
+    } catch (testError) {
+      console.warn('[Vercel Blob] Could not verify file accessibility:', testError)
+    }
+    
     return finalUrl
   } catch (error) {
     console.error('[Vercel Blob] Upload error:', error)
