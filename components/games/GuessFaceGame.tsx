@@ -1,40 +1,61 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 
 interface GuessFaceGameProps {
   question: any
-  onAnswer: (isCorrect: boolean) => void
+  onAnswer: (answer: string, isCorrect: boolean) => void
+  onNext?: () => void
+  onPrevious?: () => void
+  canGoNext?: boolean
+  canGoPrevious?: boolean
+  savedAnswer?: string | null
+  savedWrongAnswers?: string[]
 }
 
-export default function GuessFaceGame({ question, onAnswer }: GuessFaceGameProps) {
-  const [revealedParts, setRevealedParts] = useState<string[]>([])
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
-  const [showResult, setShowResult] = useState(false)
+export default function GuessFaceGame({ 
+  question, 
+  onAnswer,
+  onNext,
+  onPrevious,
+  canGoNext = true,
+  canGoPrevious = true,
+  savedAnswer = null,
+  savedWrongAnswers = []
+}: GuessFaceGameProps) {
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(savedAnswer || null)
+  const [wrongAnswers, setWrongAnswers] = useState<string[]>(savedWrongAnswers || [])
+  
+  // При смене вопроса сбрасываем состояние
+  useEffect(() => {
+    setSelectedAnswer(savedAnswer || null)
+    setWrongAnswers(savedWrongAnswers || [])
+  }, [question?.image])
 
-  const parts = question.parts || ['nose', 'eyes', 'mouth', 'hands', 'full']
+  const handleSelect = (answer: string) => {
+    // Если уже правильно ответили - ничего не делаем
+    if (selectedAnswer === question.correctAnswer) {
+      return
+    }
 
-  const revealNextPart = () => {
-    if (revealedParts.length < parts.length) {
-      setRevealedParts([...revealedParts, parts[revealedParts.length]])
+    const isCorrect = answer === question.correctAnswer
+    
+    if (isCorrect) {
+      setSelectedAnswer(answer)
+      onAnswer(answer, true)
+    } else {
+      if (!wrongAnswers.includes(answer)) {
+        setWrongAnswers(prev => [...prev, answer])
+      }
+      onAnswer(answer, false)
     }
   }
 
-  const handleSelect = (answer: string) => {
-    if (showResult) return
-    setSelectedAnswer(answer)
-    const isCorrect = answer === question.correctAnswer
-    setShowResult(true)
-    
-    setTimeout(() => {
-      onAnswer(isCorrect)
-      setRevealedParts([])
-      setSelectedAnswer(null)
-      setShowResult(false)
-    }, 2000)
-  }
+  // Показываем полную фотографию только если правильно ответили
+  const isCorrect = selectedAnswer === question.correctAnswer
+  const imageToShow = isCorrect && question.fullImage ? question.fullImage : question.image
 
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 border-2 border-yellow-400/30">
@@ -42,94 +63,96 @@ export default function GuessFaceGame({ question, onAnswer }: GuessFaceGameProps
         Угадай по фрагментам
       </h2>
 
-      <div className="mb-6 flex justify-center">
-        <div className="relative w-64 h-64 md:w-80 md:h-80 bg-white/20 rounded-lg overflow-hidden">
-          {revealedParts.length > 0 ? (
-            <Image
-              src={question.image}
-              alt="Фрагмент"
-              width={320}
-              height={320}
-              className="object-cover w-full h-full"
-              unoptimized
-              style={{
-                clipPath: revealedParts.includes('full') 
-                  ? 'none' 
-                  : `polygon(${revealedParts.map((_, i) => {
-                      const positions: Record<string, string> = {
-                        nose: '50% 50%, 45% 45%, 55% 45%',
-                        eyes: '30% 30%, 70% 30%, 70% 40%, 30% 40%',
-                        mouth: '40% 60%, 60% 60%, 60% 70%, 40% 70%',
-                        hands: '0% 0%, 100% 0%, 100% 100%, 0% 100%',
-                      }
-                      return positions[parts[i]] || '50% 50%'
-                    }).join(', ')})`
-              }}
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-white/50">
-              Нажмите "Показать фрагмент"
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="mb-6 flex justify-center gap-2">
-        {parts.map((part: string, index: number) => (
+      <div className="mb-6 flex justify-center items-center gap-2">
+        {/* Левая стрелка */}
+        {canGoPrevious && onPrevious ? (
           <motion.button
-            key={part}
-            onClick={revealNextPart}
-            disabled={revealedParts.includes(part) || showResult}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className={`px-4 py-2 rounded-lg ${
-              revealedParts.includes(part)
-                ? 'bg-green-500 text-white'
-                : 'bg-white/20 text-white hover:bg-white/30'
-            } disabled:opacity-50 disabled:cursor-not-allowed`}
+            onClick={onPrevious}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-all backdrop-blur-md"
+            aria-label="Предыдущий"
           >
-            {index + 1}
+            <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
           </motion.button>
-        ))}
+        ) : (
+          <div className="w-10 md:w-12" />
+        )}
+
+        {/* Изображение */}
+        <div className="relative w-64 h-64 md:w-80 md:h-80 bg-white/20 rounded-lg overflow-hidden">
+          <Image
+            src={imageToShow}
+            alt={isCorrect ? "Полная фотография" : "Часть тела"}
+            width={320}
+            height={320}
+            className="object-cover w-full h-full"
+            unoptimized
+            key={question?.image}
+          />
+        </div>
+
+        {/* Правая стрелка */}
+        {canGoNext && onNext ? (
+          <motion.button
+            onClick={onNext}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-all backdrop-blur-md"
+            aria-label="Следующий"
+          >
+            <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </motion.button>
+        ) : (
+          <div className="w-10 md:w-12" />
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {question.options.map((option: string) => (
-          <motion.button
-            key={option}
-            onClick={() => handleSelect(option)}
-            disabled={showResult}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className={`p-4 rounded-lg text-lg font-semibold transition-all ${
-              showResult && selectedAnswer === option
-                ? option === question.correctAnswer
+        {question.options.map((option: string) => {
+          const isSelectedCorrect = isCorrect && selectedAnswer === option
+          const isWrongAnswer = wrongAnswers.includes(option)
+          const isDisabled = isCorrect
+          
+          return (
+            <motion.button
+              key={option}
+              onClick={() => handleSelect(option)}
+              disabled={isDisabled}
+              whileHover={!isDisabled ? { scale: 1.02 } : {}}
+              whileTap={!isDisabled ? { scale: 0.98 } : {}}
+              className={`p-4 rounded-lg text-lg font-semibold transition-all ${
+                isSelectedCorrect
                   ? 'bg-green-500 text-white'
-                  : 'bg-red-500 text-white'
-                : showResult && option === question.correctAnswer
-                ? 'bg-green-500 text-white'
-                : 'bg-white/20 text-white hover:bg-white/30'
-            } disabled:opacity-50`}
-          >
-            {option}
-          </motion.button>
-        ))}
+                  : isWrongAnswer
+                  ? 'bg-red-500 text-white'
+                  : 'bg-white/20 text-white hover:bg-white/30'
+              } ${isDisabled && !isSelectedCorrect ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {option}
+            </motion.button>
+          )
+        })}
       </div>
 
-      {showResult && (
+      {/* Сообщение о результате */}
+      {(isCorrect || wrongAnswers.length > 0) && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mt-6 text-center"
         >
           <p className={`text-2xl font-bold ${
-            selectedAnswer === question.correctAnswer ? 'text-green-400' : 'text-red-400'
+            isCorrect ? 'text-green-400' : 'text-red-400'
           }`}>
-            {selectedAnswer === question.correctAnswer ? '✓ Правильно!' : '✗ Неправильно'}
+            {isCorrect ? '✓ Правильно!' : '✗ Неправильно!'}
           </p>
         </motion.div>
       )}
     </div>
   )
 }
-

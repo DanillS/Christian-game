@@ -109,11 +109,15 @@ export default function RoundSelector() {
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
   const [customIcons, setCustomIcons] = useState<Record<string, string>>({})
   const [iconsLoaded, setIconsLoaded] = useState(false)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
 
   useEffect(() => {
     let ignore = false
 
     const loadIcons = async () => {
+      // Небольшая задержка для плавной загрузки
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
       try {
         console.log('[RoundSelector] Загрузка кастомных иконок...')
         const response = await fetch('/api/round-icons')

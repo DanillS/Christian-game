@@ -27,6 +27,8 @@ export default function RoundGame({
   const [usedQuestions, setUsedQuestions] = useState<number[]>([])
   const [questions, setQuestions] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [answers, setAnswers] = useState<Map<number, string>>(new Map()) // Сохраняем правильный ответ для каждого вопроса
+  const [wrongAnswers, setWrongAnswers] = useState<Map<number, string[]>>(new Map()) // Сохраняем все неправильные ответы для каждого вопроса
 
   useEffect(() => {
     setScore(0)
@@ -86,52 +88,107 @@ export default function RoundGame({
     setCurrentIndex(initialQuestionIndex)
   }, [initialQuestionIndex])
 
-  // Используем useMemo для вычисления доступных вопросов без побочных эффектов
+  // Для guess-face используем все вопросы для навигации, но фильтруем только для выбора новых
   const availableQuestions = useMemo(() => {
     if (questions.length === 0) return []
     
-    // Если все вопросы использованы, возвращаем все вопросы
+    // Для guess-face показываем все вопросы для навигации
+    if (roundId === 'guess-face') {
+      return questions
+    }
+    
+    // Для остальных раундов фильтруем использованные
     if (usedQuestions.length >= questions.length && questions.length > 0) {
       return questions
     }
     
     return questions.filter((_, index) => !usedQuestions.includes(index))
-  }, [questions, usedQuestions])
+  }, [questions, usedQuestions, roundId])
 
-  const handleAnswer = (isCorrect: boolean) => {
-    if (isCorrect) {
-      setScore(prev => prev + 10)
-    }
+  const handleAnswer = (answer: string, isCorrect: boolean) => {
+    if (questions.length === 0) return
     
-    if (availableQuestions.length === 0 || questions.length === 0) return
-    
-    const currentQuestion = availableQuestions[currentIndex % availableQuestions.length]
-    const originalIndex = questions.indexOf(currentQuestion)
+    // Для guess-face используем currentIndex напрямую из questions
+    const originalIndex = roundId === 'guess-face' 
+      ? currentIndex % questions.length
+      : (() => {
+          const currentQuestion = availableQuestions[currentIndex % availableQuestions.length]
+          return questions.indexOf(currentQuestion)
+        })()
     
     if (originalIndex === -1) return
     
-    // Добавляем вопрос в использованные
-    const newUsed = [...usedQuestions, originalIndex]
-    
-    // Если все вопросы использованы, сбрасываем список
-    if (newUsed.length >= questions.length) {
-      setUsedQuestions([])
-      localStorage.removeItem(`used-${roundId}`)
-      setCurrentIndex(0)
-      onQuestionComplete(0)
-    } else {
-      setUsedQuestions(newUsed)
-      localStorage.setItem(`used-${roundId}`, JSON.stringify(newUsed))
+    if (isCorrect) {
+      setScore(prev => prev + 10)
       
-      // Переходим к следующему вопросу (сбрасываем индекс, так как список доступных вопросов изменится)
-      setCurrentIndex(0)
-      onQuestionComplete(0)
+      // Сохраняем правильный ответ
+      setAnswers(prev => {
+        const newAnswers = new Map(prev)
+        newAnswers.set(originalIndex, answer)
+        return newAnswers
+      })
+      
+      // Для guess-face НЕ добавляем в usedQuestions сразу - только при переходе на другой вопрос
+      if (roundId !== 'guess-face') {
+        const newUsed = [...usedQuestions, originalIndex]
+        
+        // Если все вопросы использованы, сбрасываем список
+        if (newUsed.length >= questions.length) {
+          setUsedQuestions([])
+          localStorage.removeItem(`used-${roundId}`)
+        } else {
+          setUsedQuestions(newUsed)
+          localStorage.setItem(`used-${roundId}`, JSON.stringify(newUsed))
+        }
+      }
+    } else {
+      // Сохраняем неправильный ответ (добавляем в массив)
+      setWrongAnswers(prev => {
+        const newWrongAnswers = new Map(prev)
+        const currentWrong = newWrongAnswers.get(originalIndex) || []
+        if (!currentWrong.includes(answer)) {
+          newWrongAnswers.set(originalIndex, [...currentWrong, answer])
+        }
+        return newWrongAnswers
+      })
+    }
+  }
+
+  const handleNext = () => {
+    if (questions.length === 0) return
+    
+    if (roundId === 'guess-face') {
+      // Для guess-face циклическая навигация по всем вопросам
+      const nextIndex = (currentIndex + 1) % questions.length
+      setCurrentIndex(nextIndex)
+      onQuestionComplete(nextIndex)
+    } else {
+      if (availableQuestions.length === 0) return
+      const nextIndex = (currentIndex + 1) % availableQuestions.length
+      setCurrentIndex(nextIndex)
+      onQuestionComplete(nextIndex)
+    }
+  }
+
+  const handlePrevious = () => {
+    if (questions.length === 0) return
+    
+    if (roundId === 'guess-face') {
+      // Для guess-face циклическая навигация по всем вопросам
+      const prevIndex = currentIndex === 0 ? questions.length - 1 : currentIndex - 1
+      setCurrentIndex(prevIndex)
+      onQuestionComplete(prevIndex)
+    } else {
+      if (availableQuestions.length === 0) return
+      const prevIndex = currentIndex === 0 ? availableQuestions.length - 1 : currentIndex - 1
+      setCurrentIndex(prevIndex)
+      onQuestionComplete(prevIndex)
     }
   }
 
   const currentQuestion =
-    availableQuestions.length > 0
-      ? availableQuestions[currentIndex % availableQuestions.length]
+    questions.length > 0
+      ? questions[currentIndex % questions.length]
       : null
 
   if (isLoading) {
@@ -161,12 +218,27 @@ export default function RoundGame({
   }
 
   const renderGame = () => {
+    // Получаем сохраненные ответы для текущего вопроса
+    const currentQuestionIndex = questions.indexOf(currentQuestion)
+    const savedAnswer = currentQuestionIndex !== -1 ? answers.get(currentQuestionIndex) : null
+    const savedWrongAnswers = currentQuestionIndex !== -1 ? wrongAnswers.get(currentQuestionIndex) || [] : []
+    
+    // Всегда показываем обе стрелки, если вопросов больше одного (циклическая навигация)
+    // Используем questions.length, так как availableQuestions может быть пустым на момент первого рендера
+    const showArrows = questions.length > 1
+
     switch (roundId) {
       case 'guess-face':
         return (
           <GuessFaceGame
             question={currentQuestion}
             onAnswer={handleAnswer}
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+            canGoNext={showArrows}
+            canGoPrevious={showArrows}
+            savedAnswer={savedAnswer}
+            savedWrongAnswers={savedWrongAnswers}
           />
         )
       case 'guess-melody':

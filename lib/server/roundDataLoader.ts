@@ -54,6 +54,7 @@ function mapRow(roundId: RoundId, row: any) {
     case 'guess-face':
       return {
         image: row.image_url,
+        fullImage: row.full_image_url || row.image_url, // Если нет full_image_url, используем image_url
         parts: row.parts || ['nose', 'eyes', 'mouth', 'hands', 'full'],
         options: row.options || [],
         correctAnswer: row.correct_answer,
