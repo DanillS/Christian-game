@@ -88,33 +88,16 @@ export default function RoundGame({
     setCurrentIndex(initialQuestionIndex)
   }, [initialQuestionIndex])
 
-  // Для guess-face используем все вопросы для навигации, но фильтруем только для выбора новых
+  // Для всех раундов показываем полный список вопросов (навигируем по всем)
   const availableQuestions = useMemo(() => {
-    if (questions.length === 0) return []
-    
-    // Для guess-face показываем все вопросы для навигации
-    if (roundId === 'guess-face') {
-      return questions
-    }
-    
-    // Для остальных раундов фильтруем использованные
-    if (usedQuestions.length >= questions.length && questions.length > 0) {
-      return questions
-    }
-    
-    return questions.filter((_, index) => !usedQuestions.includes(index))
-  }, [questions, usedQuestions, roundId])
+    return questions
+  }, [questions])
 
   const handleAnswer = (answer: string, isCorrect: boolean) => {
     if (questions.length === 0) return
     
-    // Для guess-face используем currentIndex напрямую из questions
-    const originalIndex = roundId === 'guess-face' 
-      ? currentIndex % questions.length
-      : (() => {
-          const currentQuestion = availableQuestions[currentIndex % availableQuestions.length]
-          return questions.indexOf(currentQuestion)
-        })()
+    // Индекс текущего вопроса в общем списке
+    const originalIndex = questions.length > 0 ? currentIndex % questions.length : -1
     
     if (originalIndex === -1) return
     
@@ -155,33 +138,16 @@ export default function RoundGame({
   const handleNext = () => {
     if (questions.length === 0) return
     
-    if (roundId === 'guess-face') {
-      // Для guess-face циклическая навигация по всем вопросам
-      const nextIndex = (currentIndex + 1) % questions.length
-      setCurrentIndex(nextIndex)
-      onQuestionComplete(nextIndex)
-    } else {
-      if (availableQuestions.length === 0) return
-      const nextIndex = (currentIndex + 1) % availableQuestions.length
-      setCurrentIndex(nextIndex)
-      onQuestionComplete(nextIndex)
-    }
+    const nextIndex = (currentIndex + 1) % questions.length
+    setCurrentIndex(nextIndex)
+    onQuestionComplete(nextIndex)
   }
 
   const handlePrevious = () => {
     if (questions.length === 0) return
-    
-    if (roundId === 'guess-face') {
-      // Для guess-face циклическая навигация по всем вопросам
-      const prevIndex = currentIndex === 0 ? questions.length - 1 : currentIndex - 1
-      setCurrentIndex(prevIndex)
-      onQuestionComplete(prevIndex)
-    } else {
-      if (availableQuestions.length === 0) return
-      const prevIndex = currentIndex === 0 ? availableQuestions.length - 1 : currentIndex - 1
-      setCurrentIndex(prevIndex)
-      onQuestionComplete(prevIndex)
-    }
+    const prevIndex = currentIndex === 0 ? questions.length - 1 : currentIndex - 1
+    setCurrentIndex(prevIndex)
+    onQuestionComplete(prevIndex)
   }
 
   const currentQuestion =
@@ -244,6 +210,10 @@ export default function RoundGame({
           <GuessMelodyGame
             question={currentQuestion}
             onAnswer={(isCorrect) => handleAnswer('', isCorrect)}
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+            canGoNext={showArrows}
+            canGoPrevious={showArrows}
           />
         )
       case 'bible-quotes':
@@ -258,6 +228,10 @@ export default function RoundGame({
           <GuessVoiceGame
             question={currentQuestion}
             onAnswer={(isCorrect) => handleAnswer('', isCorrect)}
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+            canGoNext={showArrows}
+            canGoPrevious={showArrows}
           />
         )
       case 'calendar':

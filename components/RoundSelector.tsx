@@ -96,6 +96,7 @@ function SmartRoundIcon({
       alt={alt}
       width={80}
       height={80}
+      style={{ width: 'auto', height: 'auto' }}
       className="object-contain"
       unoptimized
       priority={false}

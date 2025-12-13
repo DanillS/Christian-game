@@ -6,16 +6,49 @@ import { motion } from 'framer-motion'
 interface GuessMelodyGameProps {
   question: any
   onAnswer: (isCorrect: boolean) => void
+  onNext?: () => void
+  onPrevious?: () => void
+  canGoNext?: boolean
+  canGoPrevious?: boolean
 }
 
-export default function GuessMelodyGame({ question, onAnswer }: GuessMelodyGameProps) {
+export default function GuessMelodyGame({ 
+  question, 
+  onAnswer,
+  onNext,
+  onPrevious,
+  canGoNext = false,
+  canGoPrevious = false
+}: GuessMelodyGameProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [showResult, setShowResult] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
   const isPlayingRef = useRef(false)
 
-  // Очистка при размонтировании или смене вопроса
+  // Сброс состояния и обновление аудио при смене вопроса
+  useEffect(() => {
+    if (!question?.audioUrl) return
+    
+    console.log('[GuessMelodyGame] Смена вопроса, новый audioUrl:', question.audioUrl)
+    
+    // Сбрасываем состояние воспроизведения
+    isPlayingRef.current = false
+    setIsPlaying(false)
+    setSelectedAnswer(null)
+    setShowResult(false)
+    
+    // Обновляем src аудио элемента
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+      audioRef.current.src = question.audioUrl
+      audioRef.current.load()
+      console.log('[GuessMelodyGame] Аудио обновлено:', audioRef.current.src)
+    }
+  }, [question?.audioUrl])
+
+  // Очистка при размонтировании
   useEffect(() => {
     return () => {
       if (audioRef.current) {
@@ -25,7 +58,7 @@ export default function GuessMelodyGame({ question, onAnswer }: GuessMelodyGameP
       isPlayingRef.current = false
       setIsPlaying(false)
     }
-  }, [question?.audioUrl])
+  }, [])
 
   const handlePlay = async () => {
     if (!audioRef.current || isPlayingRef.current) return
@@ -92,17 +125,37 @@ export default function GuessMelodyGame({ question, onAnswer }: GuessMelodyGameP
         Угадай мелодию
       </h2>
 
-      <div className="mb-6 flex flex-col items-center">
-        <div className="w-32 h-32 bg-white/20 rounded-full flex items-center justify-center mb-4">
-          <span className="text-6xl">🎵</span>
-        </div>
-        
-        {question.audioUrl && (
+      <div className="mb-6 flex justify-center items-center gap-2">
+        {/* Левая стрелка */}
+        {canGoPrevious && onPrevious ? (
+          <motion.button
+            onClick={onPrevious}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-all backdrop-blur-md"
+            aria-label="Предыдущий"
+          >
+            <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </motion.button>
+        ) : (
+          <div className="w-10 md:w-12" />
+        )}
+
+        <div className="flex flex-col items-center">
+          <div className="w-32 h-32 bg-white/20 rounded-full flex items-center justify-center mb-4">
+            <span className="text-6xl">🎵</span>
+          </div>
+          
+          {question.audioUrl && (
           <>
             <audio
+              key={question.audioUrl}
               ref={audioRef}
               src={question.audioUrl}
-              preload="metadata"
+              preload="auto"
+              crossOrigin="anonymous"
               onEnded={() => {
                 isPlayingRef.current = false
                 setIsPlaying(false)
@@ -114,9 +167,10 @@ export default function GuessMelodyGame({ question, onAnswer }: GuessMelodyGameP
                   const errorCode = target.error.code
                   // Коды ошибок: 1=MEDIA_ERR_ABORTED, 2=MEDIA_ERR_NETWORK, 3=MEDIA_ERR_DECODE, 4=MEDIA_ERR_SRC_NOT_SUPPORTED
                   if (errorCode === 2 || errorCode === 4) {
-                    // Сетевые ошибки или неподдерживаемый формат - просто игнорируем
-                    console.warn('Аудиофайл недоступен:', question.audioUrl)
-                  } else {
+                    // Сетевые ошибки или неподдерживаемый формат - просто игнорируем (не логируем как warning)
+                    // console.warn('Аудиофайл недоступен:', question.audioUrl)
+                  } else if (errorCode !== 1) {
+                    // Игнорируем MEDIA_ERR_ABORTED (код 1) - это нормально при переключении
                     console.error('Ошибка загрузки аудио:', target.error)
                   }
                 }
@@ -127,6 +181,12 @@ export default function GuessMelodyGame({ question, onAnswer }: GuessMelodyGameP
                 // Игнорируем прерывание - это нормально при быстрых переключениях
                 isPlayingRef.current = false
                 setIsPlaying(false)
+              }}
+              onLoadedMetadata={() => {
+                // Аудио успешно загружено
+                if (audioRef.current) {
+                  audioRef.current.currentTime = 0
+                }
               }}
             />
             <div className="flex gap-4">
@@ -142,10 +202,28 @@ export default function GuessMelodyGame({ question, onAnswer }: GuessMelodyGameP
           </>
         )}
 
-        {!question.audioUrl && (
-          <p className="text-white/80 text-center">
-            Аудиофайл не загружен. Добавьте файл в data/guessMelodyData.ts
-          </p>
+          {!question.audioUrl && (
+            <p className="text-white/80 text-center">
+              Аудиофайл не загружен. Добавьте файл в data/guessMelodyData.ts
+            </p>
+          )}
+        </div>
+
+        {/* Правая стрелка */}
+        {canGoNext && onNext ? (
+          <motion.button
+            onClick={onNext}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-all backdrop-blur-md"
+            aria-label="Следующий"
+          >
+            <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </motion.button>
+        ) : (
+          <div className="w-10 md:w-12" />
         )}
       </div>
 
