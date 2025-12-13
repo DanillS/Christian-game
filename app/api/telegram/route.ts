@@ -152,6 +152,23 @@ async function processUpdate(update: TelegramUpdate) {
     text.substring(0, 100)
   );
 
+  // Проверяем состояние пользователя ПЕРЕД обработкой команд
+  if (userId) {
+    const state = userStates.get(userId);
+
+    // Если есть активное состояние логина - обрабатываем пароль
+    if (state && state.type === "login") {
+      await handleLoginStep(message, state);
+      return;
+    }
+
+    // Если есть другое активное состояние - обрабатываем его
+    if (state && state.type) {
+      await handleStateStep(message, state);
+      return;
+    }
+  }
+
   // Обработка текстовых команд и reply кнопок
   if (text) {
     // Обработка команды /start
@@ -401,22 +418,6 @@ async function processUpdate(update: TelegramUpdate) {
           await startAddQuote(mockMessage);
         }
       }
-      return;
-    }
-  }
-
-  // Проверяем, есть ли активное состояние для пользователя
-  if (userId) {
-    const state = userStates.get(userId);
-    if (state && state.type) {
-      // Продолжаем сбор данных (ввод текста для options, correctAnswer, quote, source, или файлы)
-      await handleStateStep(message, state);
-      return;
-    }
-
-    // Проверяем, если это состояние логина
-    if (state && state.type === "login") {
-      await handleLoginStep(message, state);
       return;
     }
   }
