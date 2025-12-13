@@ -239,28 +239,28 @@ export default function RoundGame({
         return (
           <GuessMelodyGame
             question={currentQuestion}
-            onAnswer={handleAnswer}
+            onAnswer={(isCorrect) => handleAnswer('', isCorrect)}
           />
         )
       case 'bible-quotes':
         return (
           <BibleQuotesGame
             question={currentQuestion}
-            onAnswer={handleAnswer}
+            onAnswer={(isCorrect) => handleAnswer('', isCorrect)}
           />
         )
       case 'guess-voice':
         return (
           <GuessVoiceGame
             question={currentQuestion}
-            onAnswer={handleAnswer}
+            onAnswer={(isCorrect) => handleAnswer('', isCorrect)}
           />
         )
       case 'calendar':
         return (
           <CalendarGame
             question={currentQuestion}
-            onAnswer={handleAnswer}
+            onAnswer={(isCorrect) => handleAnswer('', isCorrect)}
           />
         )
       default:
