@@ -35,7 +35,11 @@ export default function RoundGame({
     const loadQuestions = async () => {
       setIsLoading(true)
       try {
-        const response = await fetch(`/api/round-data/${roundId}`)
+        // Добавляем cache-busting параметр для избежания кеширования старых данных
+        const cacheBuster = `?t=${Date.now()}`
+        const response = await fetch(`/api/round-data/${roundId}${cacheBuster}`, {
+          cache: 'no-store',
+        })
         if (!response.ok) {
           throw new Error('Failed to load round data')
         }

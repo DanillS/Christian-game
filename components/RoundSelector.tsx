@@ -98,6 +98,8 @@ function SmartRoundIcon({
       height={80}
       className="object-contain"
       unoptimized
+      priority={false}
+      loading="lazy"
       onError={handleError}
       {...props}
     />
@@ -108,23 +110,47 @@ export default function RoundSelector() {
   const router = useRouter()
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
   const [customIcons, setCustomIcons] = useState<Record<string, string>>({})
-  const [iconsLoaded, setIconsLoaded] = useState(false)
-  const [isInitialLoad, setIsInitialLoad] = useState(true)
 
   useEffect(() => {
     let ignore = false
 
     const loadIcons = async () => {
-      // Небольшая задержка для плавной загрузки
-      await new Promise(resolve => setTimeout(resolve, 300))
+      // Проверяем кеш в sessionStorage
+      const cacheKey = 'round-icons-cache'
+      const cacheTimestampKey = 'round-icons-cache-timestamp'
+      const cachedIcons = sessionStorage.getItem(cacheKey)
+      const cacheTimestamp = sessionStorage.getItem(cacheTimestampKey)
+      
+      // Кеш действителен 1 час
+      const CACHE_DURATION = 60 * 60 * 1000 // 1 час
+      const now = Date.now()
+      
+      if (cachedIcons && cacheTimestamp) {
+        const timestamp = parseInt(cacheTimestamp, 10)
+        if (now - timestamp < CACHE_DURATION) {
+          // Используем кеш
+          try {
+            const icons = JSON.parse(cachedIcons)
+            if (!ignore) {
+              setCustomIcons(icons)
+            }
+            return
+          } catch (e) {
+            // Если кеш поврежден, загружаем заново
+            sessionStorage.removeItem(cacheKey)
+            sessionStorage.removeItem(cacheTimestampKey)
+          }
+        }
+      }
       
       try {
         console.log('[RoundSelector] Загрузка кастомных иконок...')
-        const response = await fetch('/api/round-icons')
+        const response = await fetch('/api/round-icons', {
+          cache: 'no-store',
+        })
         
         if (!response.ok) {
           console.warn('[RoundSelector] API недоступен, используем локальные иконки')
-          setIconsLoaded(true)
           return
         }
         
@@ -133,12 +159,12 @@ export default function RoundSelector() {
         
         if (!ignore && payload?.icons) {
           setCustomIcons(payload.icons)
+          // Сохраняем в кеш
+          sessionStorage.setItem(cacheKey, JSON.stringify(payload.icons))
+          sessionStorage.setItem(cacheTimestampKey, now.toString())
         }
-        
-        setIconsLoaded(true)
       } catch (error) {
         console.error('[RoundSelector] Не удалось загрузить иконки', error)
-        setIconsLoaded(true)
       }
     }
 
@@ -178,12 +204,7 @@ export default function RoundSelector() {
           >
             <div className="flex flex-col items-center text-center">
               <div className="w-16 h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 bg-white/20 rounded-full flex items-center justify-center mb-2 md:mb-4 relative overflow-hidden">
-                {!iconsLoaded ? (
-                  // Пока загружаются иконки
-                  <div className="w-full h-full flex items-center justify-center">
-                    <span className="text-white/60 text-sm">...</span>
-                  </div>
-                ) : imageErrors[round.id] ? (
+                {imageErrors[round.id] ? (
                   // Fallback эмодзи при ошибках
                   <span className="text-4xl">🎄</span>
                 ) : (
