@@ -108,7 +108,18 @@ export default function GuessMelodyGame({ question, onAnswer }: GuessMelodyGameP
                 setIsPlaying(false)
               }}
               onError={(e) => {
-                console.error('Ошибка загрузки аудио:', e)
+                // Игнорируем ошибки загрузки для недоступных файлов (timeout, network errors)
+                const target = e.target as HTMLAudioElement
+                if (target.error) {
+                  const errorCode = target.error.code
+                  // Коды ошибок: 1=MEDIA_ERR_ABORTED, 2=MEDIA_ERR_NETWORK, 3=MEDIA_ERR_DECODE, 4=MEDIA_ERR_SRC_NOT_SUPPORTED
+                  if (errorCode === 2 || errorCode === 4) {
+                    // Сетевые ошибки или неподдерживаемый формат - просто игнорируем
+                    console.warn('Аудиофайл недоступен:', question.audioUrl)
+                  } else {
+                    console.error('Ошибка загрузки аудио:', target.error)
+                  }
+                }
                 isPlayingRef.current = false
                 setIsPlaying(false)
               }}
