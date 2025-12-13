@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 
 interface GuessVoiceGameProps {
@@ -13,22 +13,58 @@ export default function GuessVoiceGame({ question, onAnswer }: GuessVoiceGamePro
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [showResult, setShowResult] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
+  const isPlayingRef = useRef(false)
+
+  // Очистка при размонтировании или смене вопроса
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.src = ''
+      }
+      isPlayingRef.current = false
+      setIsPlaying(false)
+    }
+  }, [question?.audioUrl])
 
   const handlePlay = async () => {
-    if (audioRef.current) {
-      try {
+    if (!audioRef.current || isPlayingRef.current) return
+    
+    try {
+      isPlayingRef.current = true
+      // Проверяем готовность аудио
+      if (audioRef.current.readyState >= 2) {
         await audioRef.current.play()
         setIsPlaying(true)
-      } catch (error) {
-        console.error('Ошибка воспроизведения аудио:', error)
-        setIsPlaying(false)
+      } else {
+        // Ждем загрузки
+        audioRef.current.addEventListener('canplay', async () => {
+          try {
+            await audioRef.current?.play()
+            setIsPlaying(true)
+          } catch (err) {
+            if (err instanceof Error && err.name !== 'AbortError') {
+              console.error('Ошибка воспроизведения аудио:', err)
+            }
+            isPlayingRef.current = false
+            setIsPlaying(false)
+          }
+        }, { once: true })
       }
+    } catch (error) {
+      // Игнорируем AbortError - это не критическая ошибка
+      if (error instanceof Error && error.name !== 'AbortError') {
+        console.error('Ошибка воспроизведения аудио:', error)
+      }
+      isPlayingRef.current = false
+      setIsPlaying(false)
     }
   }
 
   const handlePause = () => {
     if (audioRef.current) {
       audioRef.current.pause()
+      isPlayingRef.current = false
       setIsPlaying(false)
     }
   }
@@ -66,9 +102,19 @@ export default function GuessVoiceGame({ question, onAnswer }: GuessVoiceGamePro
             <audio
               ref={audioRef}
               src={question.audioUrl}
-              onEnded={() => setIsPlaying(false)}
+              preload="metadata"
+              onEnded={() => {
+                isPlayingRef.current = false
+                setIsPlaying(false)
+              }}
               onError={(e) => {
                 console.error('Ошибка загрузки аудио:', e)
+                isPlayingRef.current = false
+                setIsPlaying(false)
+              }}
+              onAbort={() => {
+                // Игнорируем прерывание - это нормально при быстрых переключениях
+                isPlayingRef.current = false
                 setIsPlaying(false)
               }}
             />
