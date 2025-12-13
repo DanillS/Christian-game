@@ -367,11 +367,16 @@ async function processUpdate(update: TelegramUpdate) {
       return;
     }
 
-    // Обработка кнопок для типов вопросов
+    // Обработка кнопок для типов вопросов (только на нужных шагах)
     if (text === "📖 Источник") {
       if (userId) {
         const state = userStates.get(userId);
-        if (state && state.type === "add_quote") {
+        // Кнопка "📖 Источник" работает только после ввода цитаты и вариантов
+        if (
+          state &&
+          state.type === "add_quote" &&
+          state.step === "correctAnswer"
+        ) {
           state.step = "source";
           await sendTelegramMessage(
             chatId,
@@ -386,9 +391,24 @@ async function processUpdate(update: TelegramUpdate) {
     if (text === "➡️ Продолжить") {
       if (userId) {
         const state = userStates.get(userId);
+        // Кнопка "➡️ Продолжить" работает на шаге questionType (пропустить источник) или после correctAnswer
         if (state && state.type === "add_quote") {
-          state.step = "finalize";
-          await processStateStep(chatId, userId, state);
+          if (state.step === "questionType") {
+            // Если еще не выбран тип вопроса, устанавливаем по умолчанию
+            if (!state.data.questionType) {
+              state.data.questionType = "quote";
+            }
+            state.step = "quote";
+            await sendTelegramMessage(
+              chatId,
+              "📝 Шаг 2/5: Введите текст цитаты:",
+              getCancelKeyboard()
+            );
+          } else if (state.step === "correctAnswer") {
+            // Пропустить источник и перейти к финализации
+            state.step = "finalize";
+            await processStateStep(chatId, userId, state);
+          }
         }
       }
       return;
@@ -760,6 +780,27 @@ async function handleStateStep(message: TelegramMessage, state: UserState) {
       state.data.correctAnswer = text;
       state.step = getNextStep(state.type, "correctAnswer");
       await processStateStep(chatId, userId, state);
+    }
+    return;
+  }
+
+  if (state.step === "questionType" && state.type === "add_quote") {
+    // Обработка выбора типа вопроса через текстовые сообщения
+    const text = (message.text || message.caption || "").trim();
+    // Если это не кнопка, а обычный текст - игнорируем, так как тип выбирается через кнопки
+    // Но если пользователь нажал "➡️ Продолжить", это обрабатывается выше
+    if (
+      text &&
+      text !== "➡️ Продолжить" &&
+      text !== "📖 Источник" &&
+      text !== "❌ Отмена"
+    ) {
+      // Можно добавить обработку текстового выбора типа, но пока используем только кнопки
+      await sendTelegramMessage(
+        chatId,
+        "Выберите тип вопроса с помощью кнопок ниже:",
+        getQuestionTypeKeyboard("quote_type")
+      );
     }
     return;
   }
