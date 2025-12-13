@@ -915,13 +915,13 @@ async function handleStateStep(message: TelegramMessage, state: UserState) {
       if (text) {
         await sendTelegramMessage(
           chatId,
-          "❌ На этом шаге нужен MP3 файл, а не текст. Прикрепите аудио.",
+          "❌ На этом шаге нужен аудиофайл (MP3 или OGG), а не текст. Прикрепите аудио.",
           getCancelKeyboard()
         );
       } else {
         await sendTelegramMessage(
           chatId,
-          "❌ Прикрепите MP3 файл.",
+          "❌ Прикрепите аудиофайл (MP3 или OGG).",
           getCancelKeyboard()
         );
       }
@@ -994,7 +994,7 @@ async function processStateStep(
     const questionType = state.type === "add_melody" ? "мелодию" : "голос";
     await sendTelegramMessage(
       chatId,
-      `📝 Шаг 3/3: Прикрепите MP3 файл с ${questionType}:`,
+      `📝 Шаг 3/3: Прикрепите аудиофайл (MP3 или OGG) с ${questionType}:`,
       getCancelKeyboard()
     );
   } else if (state.step === "source") {
@@ -1188,7 +1188,21 @@ async function saveFaceQuestion(chatId: number, state: UserState) {
 async function saveMelodyQuestion(chatId: number, state: UserState) {
   const file = await downloadTelegramFile(state.data.fileId);
   const timestamp = Date.now();
-  const extension = file.extension || "mp3";
+  // Определяем расширение из имени файла или MIME типа
+  let extension = file.extension;
+  if (!extension) {
+    // Если расширение не определено, пытаемся определить по MIME типу
+    const mimeType = (file.mimeType || "").toLowerCase();
+    if (
+      mimeType.includes("ogg") ||
+      mimeType.includes("vorbis") ||
+      mimeType.includes("opus")
+    ) {
+      extension = "ogg";
+    } else {
+      extension = "mp3"; // По умолчанию MP3
+    }
+  }
   const objectPath = `audio/melodies/${state.data.difficulty}/${timestamp}.${extension}`;
 
   const publicUrl = await supabaseStorageUpload(
@@ -1220,7 +1234,21 @@ async function saveMelodyQuestion(chatId: number, state: UserState) {
 async function saveVoiceQuestion(chatId: number, state: UserState) {
   const file = await downloadTelegramFile(state.data.fileId);
   const timestamp = Date.now();
-  const extension = file.extension || "mp3";
+  // Определяем расширение из имени файла или MIME типа
+  let extension = file.extension;
+  if (!extension) {
+    // Если расширение не определено, пытаемся определить по MIME типу
+    const mimeType = (file.mimeType || "").toLowerCase();
+    if (
+      mimeType.includes("ogg") ||
+      mimeType.includes("vorbis") ||
+      mimeType.includes("opus")
+    ) {
+      extension = "ogg";
+    } else {
+      extension = "mp3"; // По умолчанию MP3
+    }
+  }
   const objectPath = `audio/voices/${state.data.difficulty}/${timestamp}.${extension}`;
 
   const publicUrl = await supabaseStorageUpload(
@@ -1517,8 +1545,19 @@ function extractAudioFile(message: TelegramMessage) {
   if (message.voice) {
     return message.voice;
   }
-  if (message.document && message.document.mime_type?.startsWith("audio/")) {
-    return message.document;
+  if (message.document && message.document.mime_type) {
+    const mimeType = message.document.mime_type.toLowerCase();
+    // Поддерживаем MP3, OGG и другие аудио форматы
+    if (
+      mimeType.startsWith("audio/") ||
+      mimeType === "audio/mpeg" ||
+      mimeType === "audio/mp3" ||
+      mimeType === "audio/ogg" ||
+      mimeType === "audio/vorbis" ||
+      mimeType === "audio/opus"
+    ) {
+      return message.document;
+    }
   }
   return null;
 }
