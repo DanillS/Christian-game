@@ -219,8 +219,7 @@ async function vercelBlobUpload(
   const cleanPath = objectPath.replace(/^\//, '')
   
   // Vercel Blob API использует формат: https://blob.vercel-storage.com/<path>
-  // Но для создания нужен POST запрос на /put с токеном
-  // Попробуем использовать правильный формат API
+  // PUT запрос для загрузки файла
   const url = `https://blob.vercel-storage.com/${cleanPath}`
 
   // Преобразуем в Uint8Array для совместимости с fetch API
@@ -234,11 +233,19 @@ async function vercelBlobUpload(
   const headers = new Headers()
   // Vercel Blob требует токен в заголовке Authorization
   headers.set('Authorization', `Bearer ${BLOB_READ_WRITE_TOKEN}`)
-  headers.set('Content-Type', contentType || 'application/octet-stream')
+  // Устанавливаем правильный Content-Type для аудио файлов
+  const finalContentType = contentType || 'application/octet-stream'
+  headers.set('Content-Type', finalContentType)
   
   if (options.upsert) {
     headers.set('x-add-random-suffix', 'false')
   }
+  
+  console.log('[Vercel Blob] Uploading file:', {
+    path: cleanPath,
+    contentType: finalContentType,
+    size: body.length,
+  })
 
   try {
     const response = await fetch(url, {
@@ -273,14 +280,18 @@ async function vercelBlobUpload(
     }
 
     const result = await response.json()
+    console.log('[Vercel Blob] Upload response:', result)
     // Vercel Blob возвращает URL в поле url
     const blobUrl = result.url || result.path || (typeof result === 'string' ? result : null)
     if (!blobUrl || typeof blobUrl !== 'string') {
       console.error('[Vercel Blob] Unexpected response:', result)
       throw new Error('Vercel Blob did not return a URL')
     }
-    console.log('[Vercel Blob] Upload successful:', blobUrl)
-    return blobUrl
+    
+    // Убеждаемся, что URL полный (начинается с http:// или https://)
+    const finalUrl = blobUrl.startsWith('http') ? blobUrl : `https://${blobUrl}`
+    console.log('[Vercel Blob] Upload successful:', finalUrl)
+    return finalUrl
   } catch (error) {
     console.error('[Vercel Blob] Upload error:', error)
     throw error
