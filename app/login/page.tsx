@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import SnowAnimation from "@/components/SnowAnimation";
@@ -13,19 +13,127 @@ const PASSWORD = "1996"; // Пароль можно изменить здесь
 export default function LoginPage() {
   const router = useRouter();
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState(false);
+  const [attempts, setAttempts] = useState(0);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockTimeLeft, setBlockTimeLeft] = useState(0);
+  const [isShaking, setIsShaking] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === PASSWORD) {
-      localStorage.setItem("authenticated", "true");
-      const lastPath = localStorage.getItem("lastPath") || "/";
-      router.push(lastPath);
-    } else {
-      setError("Неверный пароль");
-      setPassword("");
+  // Загружаем состояние попыток из localStorage
+  useEffect(() => {
+    const savedAttempts = localStorage.getItem("loginAttempts");
+    const blockUntil = localStorage.getItem("blockUntil");
+
+    if (savedAttempts) {
+      setAttempts(parseInt(savedAttempts, 10));
     }
+
+    if (blockUntil) {
+      const blockTime = parseInt(blockUntil, 10);
+      const now = Date.now();
+      if (now < blockTime) {
+        setIsBlocked(true);
+        setBlockTimeLeft(Math.ceil((blockTime - now) / 1000));
+      } else {
+        localStorage.removeItem("blockUntil");
+        localStorage.removeItem("loginAttempts");
+        setAttempts(0);
+      }
+    }
+  }, []);
+
+  // Таймер блокировки
+  useEffect(() => {
+    if (isBlocked && blockTimeLeft > 0) {
+      const timer = setInterval(() => {
+        setBlockTimeLeft((prev) => {
+          if (prev <= 1) {
+            setIsBlocked(false);
+            localStorage.removeItem("blockUntil");
+            localStorage.removeItem("loginAttempts");
+            setAttempts(0);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [isBlocked, blockTimeLeft]);
+
+  // Блокируем ввод с физической клавиатуры
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!["Backspace", "Delete", "Enter", "Escape"].includes(e.key)) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Фокусируем скрытый input для предотвращения появления клавиатуры на мобильных
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, []);
+
+  // Автоматическая проверка пароля при вводе 4 цифр
+  useEffect(() => {
+    if (password.length === 4 && !isBlocked) {
+      const timer = setTimeout(() => {
+        if (password === PASSWORD) {
+          localStorage.setItem("authenticated", "true");
+          localStorage.removeItem("loginAttempts");
+          localStorage.removeItem("blockUntil");
+          const lastPath = localStorage.getItem("lastPath") || "/";
+          router.push(lastPath);
+        } else {
+          // Увеличиваем счетчик попыток
+          setAttempts((prevAttempts) => {
+            const newAttempts = prevAttempts + 1;
+            localStorage.setItem("loginAttempts", newAttempts.toString());
+
+            // Блокировка только на 5-й попытке (когда newAttempts === 5)
+            if (newAttempts === 5) {
+              const blockUntil = Date.now() + 30000; // 30 секунд
+              localStorage.setItem("blockUntil", blockUntil.toString());
+              setIsBlocked(true);
+              setBlockTimeLeft(30);
+            }
+
+            return newAttempts;
+          });
+
+          // Анимация ошибки
+          setIsShaking(true);
+          setError(true);
+          setTimeout(() => {
+            setIsShaking(false);
+            setPassword("");
+            setError(false);
+          }, 600);
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [password, isBlocked, router]);
+
+  const handleNumberClick = (num: string) => {
+    if (isBlocked) return;
+    if (password.length < 4) {
+      setPassword(password + num);
+      setError(false);
+    }
+  };
+
+  const handleBackspace = () => {
+    if (isBlocked) return;
+    setPassword(password.slice(0, -1));
+    setError(false);
   };
 
   return (
@@ -57,83 +165,157 @@ export default function LoginPage() {
             <SystemStatusBar />
 
             {/* Контент авторизации */}
-            <div className="flex-1 flex items-center justify-center overflow-hidden pt-10 md:pt-12 pb-12 md:pb-14 px-4">
+            <div className="flex-1 flex flex-col items-center justify-center overflow-hidden px-4 py-6">
+              {/* Скрытый input для предотвращения появления клавиатуры */}
+              <input
+                ref={inputRef}
+                type="text"
+                value={password}
+                onChange={() => {}}
+                className="absolute opacity-0 pointer-events-none"
+                autoComplete="off"
+                inputMode="none"
+              />
+
+              {/* Заголовок */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                className="rounded-3xl p-6 md:p-8 w-full max-w-md"
-                style={{
-                  background: "rgba(255, 255, 255, 0.25)",
-                  backdropFilter: "blur(30px)",
-                  WebkitBackdropFilter: "blur(30px)",
-                  border: "1px solid rgba(255, 204, 0, 0.4)",
-                  boxShadow:
-                    "0 8px 32px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 204, 0, 0.2)",
-                }}
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="text-center mb-8"
               >
-                <h1 className="text-2xl md:text-3xl font-bold text-white mb-1.5 md:mb-2 text-center">
+                <h1 className="text-2xl font-semibold text-white mb-2">
                   Рождественские Тайны
                 </h1>
-                <p className="text-white/80 text-center mb-4 md:mb-6 text-sm md:text-base">
-                  Введите пароль для входа
-                </p>
+                <p className="text-white/70 text-sm">Введите пароль</p>
+              </motion.div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        setError("");
+              {/* Отображение пароля - iOS стиль */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{
+                  opacity: 1,
+                  scale: 1,
+                  x: isShaking ? [0, -10, 10, -10, 10, 0] : 0,
+                }}
+                transition={{
+                  duration: 0.3,
+                  delay: 0.1,
+                  x: { duration: 0.6, times: [0, 0.2, 0.4, 0.6, 0.8, 1] },
+                }}
+                className="mb-8"
+              >
+                <div className="flex gap-3 items-center justify-center">
+                  {[0, 1, 2, 3].map((index) => (
+                    <motion.div
+                      key={index}
+                      animate={{
+                        backgroundColor: error
+                          ? "rgba(239, 68, 68, 0.8)"
+                          : index < password.length
+                          ? "rgba(255, 255, 255, 1)"
+                          : "rgba(255, 255, 255, 0.3)",
+                        borderColor: error
+                          ? "rgba(239, 68, 68, 0.8)"
+                          : "rgba(255, 255, 255, 0.5)",
+                        scale: index < password.length ? 1.1 : 1,
                       }}
-                      placeholder="Пароль"
-                      className="w-full px-4 py-3 rounded-xl bg-white/10 backdrop-blur-md text-white placeholder-white/60 border-2 border-white/20 focus:border-yellow-400/70 focus:outline-none transition-all"
-                      style={{
-                        boxShadow: "0 4px 15px rgba(234, 179, 8, 0.1)",
-                      }}
-                      autoFocus
+                      transition={{ duration: 0.3 }}
+                      className={`w-3 h-3 rounded-full border transition-all duration-200 ${
+                        index < password.length ? "" : "border"
+                      }`}
                     />
+                  ))}
+                </div>
+              </motion.div>
+
+              {/* Сообщение о блокировке */}
+              {isBlocked && (
+                <motion.p
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-red-400 text-sm text-center mb-4"
+                >
+                  Попробуйте снова через {blockTimeLeft} сек.
+                </motion.p>
+              )}
+
+              {/* Виртуальная клавиатура - iOS стиль */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
+                className="w-full max-w-[280px]"
+              >
+                <div className="grid grid-cols-3 gap-3">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                     <motion.button
+                      key={num}
                       type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/80 hover:text-white text-xl"
+                      onClick={() => handleNumberClick(num.toString())}
+                      disabled={isBlocked}
+                      whileHover={!isBlocked ? { scale: 1.08 } : {}}
+                      whileTap={!isBlocked ? { scale: 0.92 } : {}}
+                      className="aspect-square rounded-full text-white text-2xl font-light border border-white/30 transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed"
                       style={{
+                        background: isBlocked
+                          ? "rgba(255, 255, 255, 0.03)"
+                          : "rgba(255, 255, 255, 0.08)",
+                        backdropFilter: "blur(20px)",
                         willChange: "transform",
                       }}
                     >
-                      {showPassword ? "👁️" : "👁️‍🗨️"}
+                      {num}
                     </motion.button>
-                  </div>
-
-                  {error && (
-                    <motion.p
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-red-400 text-sm text-center"
-                    >
-                      {error}
-                    </motion.p>
-                  )}
-
+                  ))}
+                  {/* Пустая ячейка, 0, Backspace */}
+                  <div />
                   <motion.button
-                    type="submit"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="w-full text-white font-semibold py-3 rounded-xl backdrop-blur-xl"
+                    type="button"
+                    onClick={() => handleNumberClick("0")}
+                    disabled={isBlocked}
+                    whileHover={!isBlocked ? { scale: 1.08 } : {}}
+                    whileTap={!isBlocked ? { scale: 0.92 } : {}}
+                    className="aspect-square rounded-full text-white text-2xl font-light border border-white/30 transition-all duration-150 disabled:opacity-30 disabled:cursor-not-allowed"
                     style={{
-                      background: "rgba(255, 255, 255, 0.25)",
-                      border: "1px solid rgba(255, 255, 255, 0.3)",
-                      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.2)",
+                      background: isBlocked
+                        ? "rgba(255, 255, 255, 0.03)"
+                        : "rgba(255, 255, 255, 0.08)",
+                      backdropFilter: "blur(20px)",
                       willChange: "transform",
                     }}
                   >
-                    Войти
+                    0
                   </motion.button>
-                </form>
+                  <motion.button
+                    type="button"
+                    onClick={handleBackspace}
+                    disabled={isBlocked}
+                    whileHover={!isBlocked ? { scale: 1.08 } : {}}
+                    whileTap={!isBlocked ? { scale: 0.92 } : {}}
+                    className="aspect-square rounded-full text-white text-xl font-light border border-white/30 transition-all duration-150 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
+                    style={{
+                      background: isBlocked
+                        ? "rgba(255, 255, 255, 0.03)"
+                        : "rgba(255, 255, 255, 0.08)",
+                      backdropFilter: "blur(20px)",
+                      willChange: "transform",
+                    }}
+                  >
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14zM10 11v6M14 11v6" />
+                    </svg>
+                  </motion.button>
+                </div>
               </motion.div>
             </div>
 
