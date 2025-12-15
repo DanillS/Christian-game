@@ -201,7 +201,7 @@ export default function RoundSelector() {
   };
 
   return (
-    <div className="h-full w-full flex flex-col items-center justify-center px-2 md:px-4 relative z-10 overflow-hidden">
+    <div className="h-full w-full flex flex-col items-center justify-center px-2 md:px-4 relative z-10 overflow-visible">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -225,16 +225,12 @@ export default function RoundSelector() {
         </motion.p>
       </motion.div>
 
+      {/* Grid с иконками - адаптивный: 2 столбца на мобильных, 3 на широких */}
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="grid w-full max-w-4xl flex-1 overflow-visible min-h-0 px-2 md:px-4 py-2"
-        style={{ 
-          gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: '16px',
-          justifyContent: 'space-between'
-        }}
+        className="grid grid-cols-2 md:grid-cols-3 w-full max-w-4xl flex-1 overflow-y-auto min-h-0 px-2 md:px-4 py-2 gap-4"
       >
         {rounds.map((round) => (
           <motion.div
@@ -285,12 +281,13 @@ export default function RoundSelector() {
             </div>
 
             {/* App name - текст под иконкой */}
-            <h2 className="text-[10px] md:text-xs lg:text-sm font-medium text-white leading-tight text-center mt-1 px-1">
+            <h2 className="text-xs font-medium text-white leading-tight text-center mt-1 px-1 break-words">
               {round.name}
             </h2>
           </motion.div>
         ))}
       </motion.div>
+
     </div>
   );
 }
