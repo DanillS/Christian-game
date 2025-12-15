@@ -58,9 +58,24 @@ export default function GuessFaceGame({
   const imageToShow = isCorrect && question.fullImage ? question.fullImage : question.image
 
   return (
-    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 border-2 border-yellow-400/30">
-      <h2 className="text-2xl md:text-3xl font-bold text-white mb-6 text-center">
-        Угадай по фрагментам
+    <div 
+      style={{
+        background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(22, 163, 74, 0.15) 50%, rgba(234, 179, 8, 0.15) 100%)',
+        border: '3px solid rgba(234, 179, 8, 0.5)',
+        boxShadow: '0 8px 32px rgba(234, 179, 8, 0.3)',
+      }}
+      className="backdrop-blur-md rounded-3xl p-6 md:p-8"
+    >
+      <h2 
+        style={{
+          background: 'linear-gradient(90deg, #dc2626 0%, #16a34a 50%, #eab308 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+        }}
+        className="text-2xl md:text-3xl font-bold mb-6 text-center"
+      >
+        👤 Угадай по фрагментам 🎄
       </h2>
 
       <div className="mb-6 flex justify-center items-center gap-2">
@@ -68,13 +83,18 @@ export default function GuessFaceGame({
         {canGoPrevious && onPrevious ? (
           <motion.button
             onClick={onPrevious}
-            whileHover={{ scale: 1.1 }}
+            whileHover={{ scale: 1.15 }}
             whileTap={{ scale: 0.9 }}
-            className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-all backdrop-blur-md"
+            style={{
+              background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.4) 0%, rgba(234, 179, 8, 0.4) 100%)',
+              border: '2px solid rgba(234, 179, 8, 0.5)',
+              boxShadow: '0 4px 12px rgba(234, 179, 8, 0.3)',
+            }}
+            className="text-white p-3 rounded-full backdrop-blur-md"
             aria-label="Предыдущий"
           >
             <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" />
             </svg>
           </motion.button>
         ) : (
@@ -82,7 +102,13 @@ export default function GuessFaceGame({
         )}
 
         {/* Изображение */}
-        <div className="relative w-64 h-64 md:w-80 md:h-80 bg-white/20 rounded-lg overflow-hidden">
+        <div 
+          style={{
+            border: '3px solid rgba(234, 179, 8, 0.6)',
+            boxShadow: '0 0 30px rgba(234, 179, 8, 0.4)',
+          }}
+          className="relative w-64 h-64 md:w-80 md:h-80 bg-white/20 rounded-2xl overflow-hidden backdrop-blur-md"
+        >
           <Image
             src={imageToShow}
             alt={isCorrect ? "Полная фотография" : "Часть тела"}
@@ -97,13 +123,18 @@ export default function GuessFaceGame({
         {canGoNext && onNext ? (
           <motion.button
             onClick={onNext}
-            whileHover={{ scale: 1.1 }}
+            whileHover={{ scale: 1.15 }}
             whileTap={{ scale: 0.9 }}
-            className="bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-all backdrop-blur-md"
+            style={{
+              background: 'linear-gradient(135deg, rgba(22, 163, 74, 0.4) 0%, rgba(234, 179, 8, 0.4) 100%)',
+              border: '2px solid rgba(234, 179, 8, 0.5)',
+              boxShadow: '0 4px 12px rgba(234, 179, 8, 0.3)',
+            }}
+            className="text-white p-3 rounded-full backdrop-blur-md"
             aria-label="Следующий"
           >
             <svg className="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
             </svg>
           </motion.button>
         ) : (
@@ -122,15 +153,27 @@ export default function GuessFaceGame({
               key={option}
               onClick={() => handleSelect(option)}
               disabled={isDisabled}
-              whileHover={!isDisabled ? { scale: 1.02 } : {}}
-              whileTap={!isDisabled ? { scale: 0.98 } : {}}
-              className={`p-4 rounded-lg text-lg font-semibold transition-all ${
-                isSelectedCorrect
-                  ? 'bg-green-500 text-white'
+              whileHover={!isDisabled ? { scale: 1.05 } : {}}
+              whileTap={!isDisabled ? { scale: 0.95 } : {}}
+              style={{
+                background: isSelectedCorrect
+                  ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'
                   : isWrongAnswer
-                  ? 'bg-red-500 text-white'
-                  : 'bg-white/20 text-white hover:bg-white/30'
-              } ${isDisabled && !isSelectedCorrect ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                  : 'linear-gradient(135deg, rgba(220, 38, 38, 0.3) 0%, rgba(22, 163, 74, 0.3) 50%, rgba(234, 179, 8, 0.3) 100%)',
+                boxShadow: isSelectedCorrect
+                  ? '0 4px 20px rgba(34, 197, 94, 0.4)'
+                  : isWrongAnswer
+                  ? '0 4px 20px rgba(239, 68, 68, 0.4)'
+                  : '0 4px 15px rgba(234, 179, 8, 0.3)',
+                border: isSelectedCorrect
+                  ? '2px solid #22c55e'
+                  : isWrongAnswer
+                  ? '2px solid #ef4444'
+                  : '2px solid rgba(234, 179, 8, 0.5)',
+                opacity: isDisabled && !isSelectedCorrect ? 0.5 : 1,
+              }}
+              className="p-4 rounded-xl text-lg font-bold text-white backdrop-blur-md relative overflow-hidden shadow-lg"
             >
               {option}
             </motion.button>

@@ -26,13 +26,35 @@ export default function BibleQuotesGame({ question, onAnswer }: BibleQuotesGameP
   }
 
   return (
-    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 md:p-8 border-2 border-yellow-400/30">
-      <h2 className="text-2xl md:text-3xl font-bold text-white mb-6 text-center">
-        Библейские Цитаты
+    <div 
+      style={{
+        background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(22, 163, 74, 0.15) 50%, rgba(234, 179, 8, 0.15) 100%)',
+        border: '3px solid rgba(234, 179, 8, 0.5)',
+        boxShadow: '0 8px 32px rgba(234, 179, 8, 0.3)',
+      }}
+      className="backdrop-blur-md rounded-3xl p-6 md:p-8"
+    >
+      <h2 
+        style={{
+          background: 'linear-gradient(90deg, #dc2626 0%, #16a34a 50%, #eab308 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+        }}
+        className="text-2xl md:text-3xl font-bold mb-6 text-center"
+      >
+        📖 Библейские Цитаты 🎄
       </h2>
 
       <div className="mb-8">
-        <div className="bg-white/20 rounded-lg p-6 mb-4">
+        <div 
+          style={{
+            background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(22, 163, 74, 0.2) 50%, rgba(234, 179, 8, 0.2) 100%)',
+            border: '2px solid rgba(234, 179, 8, 0.5)',
+            boxShadow: '0 4px 20px rgba(234, 179, 8, 0.3)',
+          }}
+          className="rounded-2xl p-6 mb-4 backdrop-blur-md"
+        >
           <p className="text-xl md:text-2xl text-white text-center leading-relaxed">
             "{question.quote}"
           </p>
@@ -52,26 +74,47 @@ export default function BibleQuotesGame({ question, onAnswer }: BibleQuotesGameP
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {question.options.map((option: string) => (
-          <motion.button
-            key={option}
-            onClick={() => handleSelect(option)}
-            disabled={showResult}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className={`p-4 rounded-lg text-lg font-semibold transition-all ${
-              showResult && selectedAnswer === option
-                ? option === question.correctAnswer
-                  ? 'bg-green-500 text-white'
-                  : 'bg-red-500 text-white'
-                : showResult && option === question.correctAnswer
-                ? 'bg-green-500 text-white'
-                : 'bg-white/20 text-white hover:bg-white/30'
-            } disabled:opacity-50`}
-          >
-            {option}
-          </motion.button>
-        ))}
+        {question.options.map((option: string) => {
+          const isSelected = showResult && selectedAnswer === option
+          const shouldShowGreen = isSelected && option === question.correctAnswer
+          const shouldShowRed = isSelected && option !== question.correctAnswer
+          const shouldShowCorrect = showResult && option === question.correctAnswer
+          
+          return (
+            <motion.button
+              key={option}
+              onClick={() => handleSelect(option)}
+              disabled={showResult}
+              whileHover={{ scale: showResult ? 1 : 1.05 }}
+              whileTap={{ scale: showResult ? 1 : 0.95 }}
+              initial={false}
+              style={{
+                background: shouldShowGreen || shouldShowCorrect
+                  ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'
+                  : shouldShowRed
+                  ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                  : 'linear-gradient(135deg, rgba(220, 38, 38, 0.3) 0%, rgba(22, 163, 74, 0.3) 50%, rgba(234, 179, 8, 0.3) 100%)',
+                boxShadow: shouldShowGreen || shouldShowCorrect
+                  ? '0 4px 20px rgba(34, 197, 94, 0.4)'
+                  : shouldShowRed
+                  ? '0 4px 20px rgba(239, 68, 68, 0.4)'
+                  : '0 4px 15px rgba(234, 179, 8, 0.3)',
+                border: shouldShowGreen || shouldShowCorrect
+                  ? '2px solid #22c55e'
+                  : shouldShowRed
+                  ? '2px solid #ef4444'
+                  : '2px solid rgba(234, 179, 8, 0.5)',
+              }}
+              transition={{
+                duration: 0.3,
+                ease: 'easeOut',
+              }}
+              className="p-4 rounded-xl text-lg font-bold text-white backdrop-blur-md relative overflow-hidden shadow-lg"
+            >
+              {option}
+            </motion.button>
+          )
+        })}
       </div>
 
       {showResult && (
@@ -95,4 +138,3 @@ export default function BibleQuotesGame({ question, onAnswer }: BibleQuotesGameP
     </div>
   )
 }
-
