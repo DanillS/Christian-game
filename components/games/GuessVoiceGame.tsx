@@ -10,6 +10,7 @@ interface GuessVoiceGameProps {
   onPrevious?: () => void;
   canGoNext?: boolean;
   canGoPrevious?: boolean;
+  onBack?: () => void;
 }
 
 export default function GuessVoiceGame({
@@ -19,6 +20,7 @@ export default function GuessVoiceGame({
   onPrevious,
   canGoNext = false,
   canGoPrevious = false,
+  onBack,
 }: GuessVoiceGameProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPlayingOriginal, setIsPlayingOriginal] = useState(false);
@@ -234,40 +236,76 @@ export default function GuessVoiceGame({
   return (
     <div
       style={{
-        background:
-          "linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(22, 163, 74, 0.15) 50%, rgba(234, 179, 8, 0.15) 100%)",
-        border: "3px solid rgba(234, 179, 8, 0.5)",
-        boxShadow: "0 8px 32px rgba(234, 179, 8, 0.3)",
+        background: "rgba(255, 255, 255, 0.1)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        border: "1.5px solid rgba(255, 255, 255, 0.3)",
+        boxShadow: "0 2px 12px rgba(0, 0, 0, 0.1)",
       }}
-      className="backdrop-blur-md rounded-3xl p-6 md:p-8"
+      className="backdrop-blur-md rounded-xl p-4 md:p-5 h-full flex flex-col overflow-hidden relative"
     >
-      <h2
-        style={{
-          background:
-            "linear-gradient(90deg, #dc2626 0%, #16a34a 50%, #eab308 100%)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          backgroundClip: "text",
-        }}
-        className="text-2xl md:text-3xl font-bold mb-6 text-center"
-      >
+      {onBack && (
+        <motion.button
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{
+            duration: 0.4,
+            ease: [0.16, 1, 0.3, 1],
+          }}
+          whileHover={{
+            scale: 1.05,
+            backgroundColor: "rgba(255, 255, 255, 0.9)",
+            color: "#000",
+            transition: { duration: 0.2 },
+          }}
+          whileTap={{ scale: 0.95 }}
+          onClick={onBack}
+          className="absolute top-3 left-3 text-white p-2 md:px-3 md:py-2 rounded-lg font-semibold backdrop-blur-xl flex items-center gap-1.5 text-xs md:text-sm z-10"
+          style={{
+            background: "transparent",
+            border: "1.5px solid rgba(255, 255, 255, 0.5)",
+            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+            willChange: "transform",
+          }}
+        >
+          <svg
+            className="w-5 h-5 md:w-4 md:h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2.5}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+          <span className="hidden md:inline">Назад</span>
+        </motion.button>
+      )}
+
+      <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4 text-center text-white">
         🎤 Угадай, кто говорит 🎄
       </h2>
 
-      <div className="mb-6 flex justify-center items-center gap-2">
+      <div className="mb-3 md:mb-4 flex justify-center items-center gap-4 md:gap-6 flex-shrink-0">
         {/* Левая стрелка */}
         {canGoPrevious && onPrevious ? (
           <motion.button
             onClick={onPrevious}
-            whileHover={{ scale: 1.15 }}
-            whileTap={{ scale: 0.9 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            className="text-white p-2 md:p-2.5 rounded-lg backdrop-blur-xl transition-all"
             style={{
-              background:
-                "linear-gradient(135deg, rgba(220, 38, 38, 0.4) 0%, rgba(234, 179, 8, 0.4) 100%)",
-              border: "2px solid rgba(234, 179, 8, 0.5)",
-              boxShadow: "0 4px 12px rgba(234, 179, 8, 0.3)",
+              background: "transparent",
+              border: "1.5px solid rgba(255, 255, 255, 0.5)",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
             }}
-            className="text-white p-3 rounded-full backdrop-blur-md"
+            whileHover={{
+              backgroundColor: "rgba(255, 255, 255, 0.9)",
+              color: "#000",
+            }}
             aria-label="Предыдущий"
           >
             <svg
@@ -291,14 +329,54 @@ export default function GuessVoiceGame({
         <div className="flex flex-col items-center">
           <div
             style={{
-              background:
-                "linear-gradient(135deg, rgba(220, 38, 38, 0.3) 0%, rgba(22, 163, 74, 0.3) 50%, rgba(234, 179, 8, 0.3) 100%)",
-              border: "3px solid rgba(234, 179, 8, 0.6)",
-              boxShadow: "0 0 30px rgba(234, 179, 8, 0.4)",
+              background: "rgba(255, 255, 255, 0.1)",
+              border: "2px solid rgba(255, 255, 255, 0.9)",
+              boxShadow: "0 4px 20px rgba(0, 0, 0, 0.2)",
             }}
-            className="w-32 h-32 rounded-full flex items-center justify-center mb-4 backdrop-blur-md"
+            className="w-40 h-40 md:w-48 md:h-48 rounded-full flex items-center justify-center mb-4 backdrop-blur-md overflow-hidden relative"
           >
-            <span className="text-6xl">🎤</span>
+            {showResult &&
+            isCorrect &&
+            isOriginalVideo &&
+            question.originalAudioUrl ? (
+              <video
+                ref={originalVideoRef}
+                key={question.originalAudioUrl}
+                src={question.originalAudioUrl}
+                controls
+                preload="auto"
+                crossOrigin="anonymous"
+                className="w-full h-full object-cover rounded-full"
+                onEnded={() => setIsPlayingOriginal(false)}
+                onPause={() => setIsPlayingOriginal(false)}
+                onPlay={() => setIsPlayingOriginal(true)}
+                onError={(e) => {
+                  const target = e.target as HTMLVideoElement;
+                  if (target.error) {
+                    const errorCode = target.error.code;
+                    if (errorCode === 2 || errorCode === 4) {
+                      // Сетевые ошибки или неподдерживаемый формат - просто игнорируем
+                    } else if (errorCode !== 1) {
+                      console.error(
+                        "Ошибка загрузки оригинального видео:",
+                        target.error
+                      );
+                    }
+                  }
+                  setIsPlayingOriginal(false);
+                }}
+                onAbort={() => {
+                  setIsPlayingOriginal(false);
+                }}
+                onLoadedMetadata={() => {
+                  if (originalVideoRef.current) {
+                    originalVideoRef.current.currentTime = 0;
+                  }
+                }}
+              />
+            ) : (
+              <span className="text-6xl md:text-7xl">🎤</span>
+            )}
           </div>
 
           {question.audioUrl && (
@@ -377,54 +455,26 @@ export default function GuessVoiceGame({
                   }}
                 />
               )}
-              {question.originalAudioUrl && isOriginalVideo && (
-                <video
-                  key={question.originalAudioUrl}
-                  ref={originalVideoRef}
-                  src={question.originalAudioUrl}
-                  preload="auto"
-                  crossOrigin="anonymous"
-                  className="hidden"
-                  onEnded={() => {
-                    setIsPlayingOriginal(false);
-                  }}
-                  onError={(e) => {
-                    const target = e.target as HTMLVideoElement;
-                    if (target.error) {
-                      const errorCode = target.error.code;
-                      if (errorCode === 2 || errorCode === 4) {
-                        // Сетевые ошибки или неподдерживаемый формат - просто игнорируем
-                      } else if (errorCode !== 1) {
-                        console.error(
-                          "Ошибка загрузки оригинального видео:",
-                          target.error
-                        );
-                      }
-                    }
-                    setIsPlayingOriginal(false);
-                  }}
-                  onAbort={() => {
-                    setIsPlayingOriginal(false);
-                  }}
-                  onLoadedMetadata={() => {
-                    if (originalVideoRef.current) {
-                      originalVideoRef.current.currentTime = 0;
-                    }
-                  }}
-                />
-              )}
               <div className="flex gap-4">
                 <motion.button
                   onClick={isPlaying ? handlePause : handlePlay}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="text-white px-3 py-1.5 rounded-lg text-xs md:text-sm font-semibold backdrop-blur-xl transition-all"
                   style={{
-                    background:
-                      "linear-gradient(135deg, rgba(220, 38, 38, 0.4) 0%, rgba(22, 163, 74, 0.4) 100%)",
-                    border: "2px solid rgba(234, 179, 8, 0.6)",
-                    boxShadow: "0 4px 15px rgba(234, 179, 8, 0.3)",
+                    background: "transparent",
+                    border: "1.5px solid rgba(255, 255, 255, 0.5)",
+                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
                   }}
-                  className="text-white px-6 py-3 rounded-xl text-lg font-bold backdrop-blur-md"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background =
+                      "rgba(255, 255, 255, 0.9)";
+                    e.currentTarget.style.color = "#000";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = "#fff";
+                  }}
                 >
                   {isPlaying ? "⏸ Пауза" : "▶ Воспроизвести"}
                 </motion.button>
@@ -438,15 +488,23 @@ export default function GuessVoiceGame({
                         ? handlePauseOriginal
                         : handlePlayOriginal
                     }
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="text-white px-3 py-1.5 rounded-lg text-xs md:text-sm font-semibold backdrop-blur-xl transition-all"
                     style={{
-                      background:
-                        "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
-                      border: "2px solid #22c55e",
-                      boxShadow: "0 4px 20px rgba(34, 197, 94, 0.5)",
+                      background: "transparent",
+                      border: "1.5px solid rgba(255, 255, 255, 0.5)",
+                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
                     }}
-                    className="text-white px-6 py-3 rounded-xl text-lg font-bold"
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background =
+                        "rgba(255, 255, 255, 0.9)";
+                      e.currentTarget.style.color = "#000";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                      e.currentTarget.style.color = "#fff";
+                    }}
                   >
                     {isPlayingOriginal
                       ? "⏸ Остановить"
@@ -456,27 +514,6 @@ export default function GuessVoiceGame({
                   </motion.button>
                 )}
               </div>
-
-              {/* Видеоплеер для оригинала */}
-              {showResult &&
-                isCorrect &&
-                isOriginalVideo &&
-                isPlayingOriginal && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="mt-4 rounded-lg overflow-hidden border-2 border-green-400"
-                  >
-                    <video
-                      src={question.originalAudioUrl}
-                      controls
-                      autoPlay
-                      className="w-full max-w-md mx-auto rounded-lg"
-                      onEnded={() => setIsPlayingOriginal(false)}
-                      onPause={() => setIsPlayingOriginal(false)}
-                    />
-                  </motion.div>
-                )}
 
               <p className="text-white/60 text-sm mt-2 text-center">
                 Звук может быть неестественным
@@ -495,15 +532,18 @@ export default function GuessVoiceGame({
         {canGoNext && onNext ? (
           <motion.button
             onClick={onNext}
-            whileHover={{ scale: 1.15 }}
-            whileTap={{ scale: 0.9 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            className="text-white p-2 md:p-2.5 rounded-lg backdrop-blur-xl transition-all"
             style={{
-              background:
-                "linear-gradient(135deg, rgba(22, 163, 74, 0.4) 0%, rgba(234, 179, 8, 0.4) 100%)",
-              border: "2px solid rgba(234, 179, 8, 0.5)",
-              boxShadow: "0 4px 12px rgba(234, 179, 8, 0.3)",
+              background: "transparent",
+              border: "1.5px solid rgba(255, 255, 255, 0.5)",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
             }}
-            className="text-white p-3 rounded-full backdrop-blur-md"
+            whileHover={{
+              backgroundColor: "rgba(255, 255, 255, 0.9)",
+              color: "#000",
+            }}
             aria-label="Следующий"
           >
             <svg
@@ -525,47 +565,63 @@ export default function GuessVoiceGame({
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {question.options.map((option: string) => {
-          const isSelected = showResult && selectedAnswer === option;
-          const shouldShowGreen = isSelected && isCorrect;
-          const shouldShowRed = isSelected && !isCorrect;
+      <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
+          {question.options.map((option: string) => {
+            const isSelected = showResult && selectedAnswer === option;
+            const shouldShowGreen = isSelected && isCorrect;
+            const shouldShowRed = isSelected && !isCorrect;
 
-          return (
-            <motion.button
-              key={option}
-              onClick={() => handleSelect(option)}
-              disabled={showResult && isCorrect}
-              whileHover={{ scale: showResult && isCorrect ? 1 : 1.05 }}
-              whileTap={{ scale: showResult && isCorrect ? 1 : 0.95 }}
-              initial={false}
-              style={{
-                background: shouldShowGreen
-                  ? "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"
-                  : shouldShowRed
-                  ? "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)"
-                  : "linear-gradient(135deg, rgba(220, 38, 38, 0.3) 0%, rgba(22, 163, 74, 0.3) 50%, rgba(234, 179, 8, 0.3) 100%)",
-                boxShadow: shouldShowGreen
-                  ? "0 4px 20px rgba(34, 197, 94, 0.4)"
-                  : shouldShowRed
-                  ? "0 4px 20px rgba(239, 68, 68, 0.4)"
-                  : "0 4px 15px rgba(234, 179, 8, 0.3)",
-                border: shouldShowGreen
-                  ? "2px solid #22c55e"
-                  : shouldShowRed
-                  ? "2px solid #ef4444"
-                  : "2px solid rgba(234, 179, 8, 0.5)",
-              }}
-              transition={{
-                duration: shouldShowRed ? 0.5 : 0.3,
-                ease: "easeOut",
-              }}
-              className="p-4 rounded-xl text-lg font-bold text-white backdrop-blur-md relative overflow-hidden shadow-lg"
-            >
-              {option}
-            </motion.button>
-          );
-        })}
+            return (
+              <motion.button
+                key={option}
+                onClick={() => handleSelect(option)}
+                disabled={showResult && isCorrect}
+                whileHover={
+                  showResult && isCorrect
+                    ? {}
+                    : {
+                        scale: 1.02,
+                        backgroundColor: "rgba(255, 255, 255, 0.9)",
+                        color: "#000",
+                      }
+                }
+                whileTap={{ scale: showResult && isCorrect ? 1 : 0.98 }}
+                initial={false}
+                className={`min-h-[44px] p-2 md:p-2.5 rounded-lg text-xs md:text-sm font-semibold relative overflow-hidden transition-all cursor-pointer flex items-center justify-center ${
+                  shouldShowGreen
+                    ? "bg-green-500 text-white"
+                    : shouldShowRed
+                    ? "bg-red-500 text-white"
+                    : "text-white"
+                }`}
+                style={{
+                  background: shouldShowGreen
+                    ? "rgba(34, 197, 94, 0.8)"
+                    : shouldShowRed
+                    ? "rgba(239, 68, 68, 0.8)"
+                    : "transparent",
+                  border: shouldShowGreen
+                    ? "1.5px solid rgba(34, 197, 94, 0.8)"
+                    : shouldShowRed
+                    ? "1.5px solid rgba(239, 68, 68, 0.8)"
+                    : "1.5px solid rgba(255, 255, 255, 0.5)",
+                  boxShadow: shouldShowGreen
+                    ? "0 2px 8px rgba(34, 197, 94, 0.3)"
+                    : shouldShowRed
+                    ? "0 2px 8px rgba(239, 68, 68, 0.3)"
+                    : "0 2px 8px rgba(0, 0, 0, 0.15)",
+                }}
+                transition={{
+                  duration: shouldShowRed ? 0.5 : 0.3,
+                  ease: "easeOut",
+                }}
+              >
+                {option}
+              </motion.button>
+            );
+          })}
+        </div>
       </div>
 
       {showResult && isCorrect && (

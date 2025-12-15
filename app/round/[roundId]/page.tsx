@@ -1,56 +1,86 @@
-'use client'
+"use client";
 
-import { useParams, useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
-import RoundGame from '@/components/RoundGame'
-import SnowAnimation from '@/components/SnowAnimation'
-import StarsBackground from '@/components/StarsBackground'
+import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import RoundGame from "@/components/RoundGame";
+import SnowAnimation from "@/components/SnowAnimation";
+import StarsBackground from "@/components/StarsBackground";
+import SystemStatusBar from "@/components/SystemStatusBar";
+import HomeIndicator from "@/components/HomeIndicator";
 
 export default function RoundPage() {
-  const params = useParams()
-  const router = useRouter()
-  const roundId = params.roundId as string
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  const params = useParams();
+  const router = useRouter();
+  const roundId = params.roundId as string;
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
   useEffect(() => {
-    const saved = localStorage.getItem(`progress-${roundId}`)
+    // Сохраняем текущий путь
+    localStorage.setItem("lastPath", `/round/${roundId}`);
+
+    const saved = localStorage.getItem(`progress-${roundId}`);
     if (saved) {
-      const progress = JSON.parse(saved)
-      setCurrentQuestionIndex(progress.questionIndex || 0)
+      const progress = JSON.parse(saved);
+      setCurrentQuestionIndex(progress.questionIndex || 0);
     } else {
-      setCurrentQuestionIndex(0)
+      setCurrentQuestionIndex(0);
     }
-  }, [roundId])
+  }, [roundId]);
 
   const handleQuestionComplete = (newIndex: number) => {
-    setCurrentQuestionIndex(newIndex)
+    setCurrentQuestionIndex(newIndex);
     localStorage.setItem(
       `progress-${roundId}`,
       JSON.stringify({ questionIndex: newIndex })
-    )
-  }
+    );
+  };
 
   const handleBack = () => {
-    router.push('/')
-  }
+    router.push("/");
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-900 via-blue-800 to-green-900 relative overflow-hidden flex items-center justify-center p-4">
+    <div className="h-screen w-screen bg-gradient-to-b from-blue-900 via-blue-800 to-green-900 relative overflow-hidden flex items-center justify-center p-2 md:p-4">
       <StarsBackground />
       <SnowAnimation />
-      <div className="w-full max-w-md md:max-w-2xl lg:max-w-4xl">
-        <div className="bg-gray-900 rounded-[2.5rem] md:rounded-[3rem] p-4 md:p-6 shadow-2xl border-4 border-gray-800">
-          <div className="bg-gradient-to-b from-blue-900 via-blue-800 to-green-900 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden min-h-[600px] flex items-center justify-center">
-            <RoundGame
-              roundId={roundId}
-              initialQuestionIndex={currentQuestionIndex}
-              onBack={handleBack}
-              onQuestionComplete={handleQuestionComplete}
-            />
+      <div className="w-full h-full max-w-sm md:max-w-2xl lg:max-w-4xl relative flex items-center justify-center">
+        {/* iOS/iPad device frame */}
+        <div
+          className="relative rounded-[2rem] md:rounded-[2.5rem] lg:rounded-[3rem] p-2 md:p-3 lg:p-4 w-full h-full max-h-[95vh] flex flex-col"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.3) 100%)",
+            boxShadow:
+              "0 20px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+          }}
+        >
+          {/* Screen с градиентом */}
+          <div
+            className="rounded-[1.5rem] md:rounded-[2rem] lg:rounded-[2.5rem] overflow-hidden relative flex flex-col flex-1"
+            style={{
+              background:
+                "linear-gradient(to bottom, rgba(30, 58, 138, 0.7), rgba(30, 64, 175, 0.7), rgba(22, 101, 52, 0.7))",
+              boxShadow: "inset 0 2px 8px rgba(0, 0, 0, 0.3)",
+            }}
+          >
+            {/* Системная строка с часами */}
+            <SystemStatusBar />
+
+            {/* Контент */}
+            <div className="flex-1 flex items-center justify-center overflow-hidden pt-10 md:pt-12 pb-12 md:pb-14">
+              <RoundGame
+                roundId={roundId}
+                initialQuestionIndex={currentQuestionIndex}
+                onBack={handleBack}
+                onQuestionComplete={handleQuestionComplete}
+              />
+            </div>
+
+            {/* Home Indicator */}
+            <HomeIndicator />
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
-

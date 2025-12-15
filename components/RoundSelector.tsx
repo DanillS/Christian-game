@@ -1,234 +1,296 @@
-'use client'
+"use client";
 
-import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
-import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 
 const rounds = [
   {
-    id: 'guess-face',
-    name: 'Угадай Лицо',
-    description: 'Угадай по фрагментам',
-    icon: '/icons/guess-face',
+    id: "guess-face",
+    name: "Угадай Лицо",
+    description: "Угадай по фрагментам",
+    icon: "/icons/guess-face",
+    emoji: "👤",
   },
   {
-    id: 'guess-melody',
-    name: 'Угадай Мелодию', 
-    description: 'Узнай христианские гимны',
-    icon: '/icons/guess-melody',
+    id: "guess-melody",
+    name: "Угадай Мелодию",
+    description: "Узнай христианские гимны",
+    icon: "/icons/guess-melody",
+    emoji: "🎵",
   },
   {
-    id: 'bible-quotes',
-    name: 'Библейские Цитаты',
-    description: 'Продолжи цитату',
-    icon: '/icons/bible-quotes',
+    id: "bible-quotes",
+    name: "Библейские Цитаты",
+    description: "Продолжи цитату",
+    icon: "/icons/bible-quotes",
+    emoji: "📖",
   },
   {
-    id: 'guess-voice',
-    name: 'Угадай, Кто Говорит',
-    description: 'Узнай голос',
-    icon: '/icons/guess-voice',
+    id: "guess-voice",
+    name: "Угадай, Кто Говорит",
+    description: "Узнай голос",
+    icon: "/icons/guess-voice",
+    emoji: "🎤",
   },
   {
-    id: 'calendar',
-    name: 'Календарь',
-    description: 'Угадай дату или день рождения',
-    icon: '/icons/calendar',
+    id: "calendar",
+    name: "Календарь",
+    description: "Угадай дату или день рождения",
+    icon: "/icons/calendar",
+    emoji: "📅",
   },
-]
+];
 
 // Умный компонент для загрузки иконок с поддержкой форматов
-function SmartRoundIcon({ 
-  roundId, 
-  customIcon, 
-  defaultIcon, 
-  alt, 
+function SmartRoundIcon({
+  roundId,
+  customIcon,
+  defaultIcon,
+  emoji,
+  alt,
   onError,
-  ...props 
-}: { 
+  ...props
+}: {
   roundId: string;
   customIcon?: string;
   defaultIcon: string;
+  emoji: string;
   alt: string;
   onError: () => void;
   [key: string]: any;
 }) {
-  const formats = ['.png', '.jpg', '.jpeg', '.webp']
-  const [currentSrc, setCurrentSrc] = useState('')
-  const [attempt, setAttempt] = useState(0)
+  const formats = [".png", ".jpg", ".jpeg", ".webp"];
+  const [currentSrc, setCurrentSrc] = useState("");
+  const [attempt, setAttempt] = useState(0);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
-    // Сначала пробуем кастомную иконку из blob storage
     if (customIcon) {
-      setCurrentSrc(customIcon)
+      setCurrentSrc(customIcon);
+      setHasError(false);
     } else {
-      // Если кастомной нет, пробуем локальные файлы
-      setCurrentSrc(`${defaultIcon}${formats[0]}`)
+      setCurrentSrc(`${defaultIcon}${formats[0]}`);
+      setHasError(false);
     }
-  }, [customIcon, defaultIcon])
+  }, [customIcon, defaultIcon]);
 
   const handleError = () => {
-    // Если кастомная иконка не загрузилась - пробуем локальные форматы
     if (customIcon && attempt === 0) {
-      setCurrentSrc(`${defaultIcon}${formats[0]}`)
-      setAttempt(1)
-    } 
-    // Пробуем разные форматы локальных файлов
-    else if (attempt < formats.length - 1) {
-      setCurrentSrc(`${defaultIcon}${formats[attempt + 1]}`)
-      setAttempt(attempt + 1)
+      setCurrentSrc(`${defaultIcon}${formats[0]}`);
+      setAttempt(1);
+    } else if (attempt < formats.length - 1) {
+      setCurrentSrc(`${defaultIcon}${formats[attempt + 1]}`);
+      setAttempt(attempt + 1);
     } else {
-      // Все форматы провалились
-      onError()
+      setHasError(true);
+      onError();
     }
-  }
+  };
 
-  if (!currentSrc) return (
-    <div className="w-full h-full flex items-center justify-center bg-gray-200 rounded">
-      <span className="text-gray-400">...</span>
-    </div>
-  )
+  if (hasError || !currentSrc) {
+    return <span className="text-2xl md:text-3xl lg:text-4xl">{emoji}</span>;
+  }
 
   return (
     <Image
       src={currentSrc}
       alt={alt}
-      width={80}
-      height={80}
-      style={{ width: 'auto', height: 'auto' }}
-      className="object-contain"
+      width={96}
+      height={96}
+      className="object-cover w-full h-full rounded-full"
       unoptimized
       priority={false}
       loading="lazy"
       onError={handleError}
       {...props}
     />
-  )
+  );
 }
 
 export default function RoundSelector() {
-  const router = useRouter()
-  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
-  const [customIcons, setCustomIcons] = useState<Record<string, string>>({})
+  const router = useRouter();
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [customIcons, setCustomIcons] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    let ignore = false
+    let ignore = false;
 
     const loadIcons = async () => {
-      // Проверяем кеш в sessionStorage
-      const cacheKey = 'round-icons-cache'
-      const cacheTimestampKey = 'round-icons-cache-timestamp'
-      const cachedIcons = sessionStorage.getItem(cacheKey)
-      const cacheTimestamp = sessionStorage.getItem(cacheTimestampKey)
-      
-      // Кеш действителен 1 час
-      const CACHE_DURATION = 60 * 60 * 1000 // 1 час
-      const now = Date.now()
-      
+      const cacheKey = "round-icons-cache";
+      const cacheTimestampKey = "round-icons-cache-timestamp";
+      const cachedIcons = sessionStorage.getItem(cacheKey);
+      const cacheTimestamp = sessionStorage.getItem(cacheTimestampKey);
+
+      const CACHE_DURATION = 60 * 60 * 1000;
+      const now = Date.now();
+
       if (cachedIcons && cacheTimestamp) {
-        const timestamp = parseInt(cacheTimestamp, 10)
+        const timestamp = parseInt(cacheTimestamp, 10);
         if (now - timestamp < CACHE_DURATION) {
-          // Используем кеш
           try {
-            const icons = JSON.parse(cachedIcons)
+            const icons = JSON.parse(cachedIcons);
             if (!ignore) {
-              setCustomIcons(icons)
+              setCustomIcons(icons);
             }
-            return
+            return;
           } catch (e) {
-            // Если кеш поврежден, загружаем заново
-            sessionStorage.removeItem(cacheKey)
-            sessionStorage.removeItem(cacheTimestampKey)
+            sessionStorage.removeItem(cacheKey);
+            sessionStorage.removeItem(cacheTimestampKey);
           }
         }
       }
-      
+
       try {
-        console.log('[RoundSelector] Загрузка кастомных иконок...')
-        const response = await fetch('/api/round-icons', {
-          cache: 'no-store',
-        })
-        
+        const response = await fetch("/api/round-icons", {
+          cache: "no-store",
+        });
+
         if (!response.ok) {
-          console.warn('[RoundSelector] API недоступен, используем локальные иконки')
-          return
+          return;
         }
-        
-        const payload = await response.json()
-        console.log('[RoundSelector] Получены иконки:', payload)
-        
+
+        const payload = await response.json();
+
         if (!ignore && payload?.icons) {
-          setCustomIcons(payload.icons)
-          // Сохраняем в кеш
-          sessionStorage.setItem(cacheKey, JSON.stringify(payload.icons))
-          sessionStorage.setItem(cacheTimestampKey, now.toString())
+          setCustomIcons(payload.icons);
+          sessionStorage.setItem(cacheKey, JSON.stringify(payload.icons));
+          sessionStorage.setItem(cacheTimestampKey, now.toString());
         }
       } catch (error) {
-        console.error('[RoundSelector] Не удалось загрузить иконки', error)
+        console.error("[RoundSelector] Не удалось загрузить иконки", error);
       }
-    }
+    };
 
-    loadIcons()
+    loadIcons();
 
     return () => {
-      ignore = true
-    }
-  }, [])
+      ignore = true;
+    };
+  }, []);
 
   const handleImageError = (roundId: string) => {
-    console.warn(`[RoundSelector] Ошибка загрузки иконки для ${roundId}`)
-    setImageErrors((prev) => ({ ...prev, [roundId]: true }))
-  }
+    setImageErrors((prev) => ({ ...prev, [roundId]: true }));
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.08,
+        delayChildren: 0.15,
+      },
+    },
+  };
+
+  const cardVariants = {
+    hidden: {
+      opacity: 0,
+      y: 20,
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.4,
+        ease: [0.16, 1, 0.3, 1],
+      },
+    },
+  };
 
   return (
-    <div className="min-h-[600px] md:min-h-[800px] flex flex-col items-center justify-center px-4 py-6 md:py-8 relative z-10">
-      <motion.h1
+    <div className="h-full w-full flex flex-col items-center justify-center px-2 md:px-4 relative z-10 overflow-hidden">
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-2xl md:text-4xl font-bold text-white mb-4 md:mb-6 text-center drop-shadow-lg"
+        transition={{
+          duration: 0.6,
+          ease: [0.16, 1, 0.3, 1],
+        }}
+        className="text-center mb-2 md:mb-3 flex-shrink-0"
+        style={{ marginBottom: '40px' }}
       >
-        Рождественские Тайны
-      </motion.h1>
-      
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 w-full">
-        {rounds.map((round, index) => (
+        <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-white mb-1 drop-shadow-2xl">
+          Рождественские Тайны
+        </h1>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="text-white/80 text-xs md:text-sm"
+        >
+          Выберите игру
+        </motion.p>
+      </motion.div>
+
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="grid w-full max-w-4xl flex-1 overflow-auto min-h-0 px-2 md:px-4"
+        style={{ 
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: '16px',
+          justifyContent: 'space-between'
+        }}
+      >
+        {rounds.map((round) => (
           <motion.div
             key={round.id}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.1 }}
-            whileHover={{ scale: 1.05 }}
+            variants={cardVariants}
+            whileHover={{
+              scale: 1.05,
+              y: -3,
+              transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
+            }}
             whileTap={{ scale: 0.95 }}
-            className="bg-white/10 backdrop-blur-md rounded-xl md:rounded-2xl p-3 md:p-6 cursor-pointer border-2 border-yellow-400/30 hover:border-yellow-400/70 transition-all"
+            className="cursor-pointer relative flex flex-col items-center justify-start w-full"
+            style={{ 
+              willChange: "transform"
+            }}
             onClick={() => router.push(`/round/${round.id}`)}
           >
-            <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 md:w-24 md:h-24 lg:w-32 lg:h-32 bg-white/20 rounded-full flex items-center justify-center mb-2 md:mb-4 relative overflow-hidden">
-                {imageErrors[round.id] ? (
-                  // Fallback эмодзи при ошибках
-                  <span className="text-4xl">🎄</span>
-                ) : (
-                  // Умный компонент иконки
-                  <SmartRoundIcon 
-                    roundId={round.id}
-                    customIcon={customIcons[round.id]}
-                    defaultIcon={round.icon}
-                    alt={round.name}
-                    onError={() => handleImageError(round.id)}
-                  />
-                )}
-              </div>
-              <h2 className="text-sm md:text-xl lg:text-2xl font-bold text-white mb-1 md:mb-2">
-                {round.name}
-              </h2>
-              <p className="text-white/80 text-xs md:text-sm">
-                {round.description}
-              </p>
+            {/* App icon container - круглый */}
+            <div
+              className="rounded-full flex items-center justify-center relative overflow-hidden mb-2 flex-shrink-0"
+              style={{
+                background: "rgba(255, 255, 255, 0.15)",
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
+                border: "2px solid rgba(255, 255, 255, 0.3)",
+                boxShadow:
+                  "0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)",
+                height: '96px',
+                width: '96px'
+              }}
+            >
+              {imageErrors[round.id] ? (
+                <span className="text-2xl md:text-3xl lg:text-4xl">
+                  {round.emoji}
+                </span>
+              ) : (
+                <SmartRoundIcon
+                  roundId={round.id}
+                  customIcon={customIcons[round.id]}
+                  defaultIcon={round.icon}
+                  emoji={round.emoji}
+                  alt={round.name}
+                  onError={() => handleImageError(round.id)}
+                  className="object-cover rounded-full"
+                  style={{ width: '93px', height: '90px' }}
+                />
+              )}
             </div>
+
+            {/* App name - текст под иконкой */}
+            <h2 className="text-[10px] md:text-xs lg:text-sm font-medium text-white leading-tight text-center mt-1 px-1">
+              {round.name}
+            </h2>
           </motion.div>
         ))}
-      </div>
+      </motion.div>
     </div>
-  )
+  );
 }
