@@ -124,17 +124,17 @@ export default function GuessFaceGame({
         {canGoPrevious && onPrevious ? (
           <motion.button
             onClick={onPrevious}
-            whileHover={{ scale: 1.1 }}
+            whileHover={{
+              scale: 1.1,
+              backgroundColor: "rgba(255, 255, 255, 0.9)",
+              color: "#000",
+            }}
             whileTap={{ scale: 0.95 }}
             className="text-white p-2 md:p-2.5 rounded-lg backdrop-blur-xl transition-all"
             style={{
               background: "transparent",
               border: "1.5px solid rgba(255, 255, 255, 0.5)",
               boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
-            }}
-            whileHover={{
-              backgroundColor: "rgba(255, 255, 255, 0.9)",
-              color: "#000",
             }}
             aria-label="Предыдущий"
           >
@@ -178,17 +178,17 @@ export default function GuessFaceGame({
         {canGoNext && onNext ? (
           <motion.button
             onClick={onNext}
-            whileHover={{ scale: 1.1 }}
+            whileHover={{
+              scale: 1.1,
+              backgroundColor: "rgba(255, 255, 255, 0.9)",
+              color: "#000",
+            }}
             whileTap={{ scale: 0.95 }}
             className="text-white p-2 md:p-2.5 rounded-lg backdrop-blur-xl transition-all"
             style={{
               background: "transparent",
               border: "1.5px solid rgba(255, 255, 255, 0.5)",
               boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
-            }}
-            whileHover={{
-              backgroundColor: "rgba(255, 255, 255, 0.9)",
-              color: "#000",
             }}
             aria-label="Следующий"
           >

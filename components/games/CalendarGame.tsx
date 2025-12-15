@@ -94,10 +94,6 @@ export default function CalendarGame({
       {question.questionType === "date" && question.image && (
         <div className="mb-4 md:mb-6 flex justify-center">
           <div
-            style={{
-              border: "3px solid rgba(234, 179, 8, 0.6)",
-              boxShadow: "0 0 30px rgba(234, 179, 8, 0.4)",
-            }}
             className="relative w-full max-w-md md:max-w-lg lg:max-w-xl aspect-square bg-white/20 rounded-xl overflow-hidden backdrop-blur-md"
             style={{
               border: "2px solid rgba(255, 255, 255, 0.9)",
