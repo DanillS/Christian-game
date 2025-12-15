@@ -42,6 +42,8 @@ interface TelegramMessage {
   document?: { file_id: string; mime_type?: string; file_name?: string } | null;
   audio?: { file_id: string; mime_type?: string; file_name?: string } | null;
   voice?: { file_id: string; mime_type?: string } | null;
+  video?: { file_id: string; mime_type?: string; file_name?: string } | null;
+  video_note?: { file_id: string } | null;
 }
 
 interface TelegramCallbackQuery {
@@ -685,7 +687,7 @@ async function startAddVoice(message: TelegramMessage) {
   });
   await sendTelegramMessage(
     chatId,
-    '🎤 Добавление вопроса "Угадай голос"\n\n📝 Шаг 1/3: Введите варианты ответов\n\nВведите первый вариант ответа (минимум 2 варианта):',
+    '🎤 Добавление вопроса "Угадай голос"\n\n📝 Шаг 1/4: Введите варианты ответов\n\nВведите первый вариант ответа (минимум 2 варианта):',
     getCancelKeyboard()
   );
 }
@@ -722,6 +724,7 @@ function getNextStep(type: string, currentStep: string): string {
     add_voice: {
       options: "correctAnswer",
       correctAnswer: "audio",
+      audio: "originalAudio",
     },
     add_quote: {
       questionType: "quote",
@@ -907,8 +910,20 @@ async function handleStateStep(message: TelegramMessage, state: UserState) {
     const fileInfo = extractAudioFile(message);
     if (fileInfo) {
       state.data.fileId = fileInfo.file_id;
-      await sendTelegramMessage(chatId, "⏳ Загружаю аудиофайл...");
-      await finalizeQuestion(chatId, userId, state);
+      
+      // Для "Угадай голос" переходим на шаг загрузки оригинала
+      if (state.type === "add_voice") {
+        state.step = "originalAudio";
+        await sendTelegramMessage(
+          chatId,
+          "✅ Неестественный голос сохранен!\n\n📝 Шаг 4/4: Прикрепите оригинальный аудио/видео файл (необязательно)\n\nЭтот файл будет воспроизводиться после правильного ответа.\n\n📹 Можете прикрепить видео или аудио.\n\nЕсли не хотите добавлять оригинал, нажмите кнопку 'Пропустить'.",
+          getSkipOrCancelKeyboard()
+        );
+      } else {
+        // Для "Угадай мелодию" сразу финализируем
+        await sendTelegramMessage(chatId, "⏳ Загружаю аудиофайл...");
+        await finalizeQuestion(chatId, userId, state);
+      }
     } else {
       // Если файл не найден, но есть текст - это может быть ошибка
       const text = (message.text || message.caption || "").trim();
@@ -923,6 +938,40 @@ async function handleStateStep(message: TelegramMessage, state: UserState) {
           chatId,
           "❌ Прикрепите аудиофайл (MP3 или OGA).",
           getCancelKeyboard()
+        );
+      }
+    }
+    return;
+  }
+
+  if (state.step === "originalAudio" && state.type === "add_voice") {
+    const text = (message.text || message.caption || "").trim();
+    
+    // Если пользователь нажал "Пропустить"
+    if (text === "⏭ Пропустить") {
+      await sendTelegramMessage(chatId, "⏳ Сохраняю вопрос...");
+      await finalizeQuestion(chatId, userId, state);
+      return;
+    }
+    
+    const fileInfo = extractAudioOrVideoFile(message);
+    if (fileInfo) {
+      state.data.originalFileId = fileInfo.file_id;
+      await sendTelegramMessage(chatId, "⏳ Загружаю файлы...");
+      await finalizeQuestion(chatId, userId, state);
+    } else {
+      // Если файл не найден, но есть текст - это может быть ошибка
+      if (text) {
+        await sendTelegramMessage(
+          chatId,
+          "❌ На этом шаге нужен аудио/видео файл или нажмите 'Пропустить'.",
+          getSkipOrCancelKeyboard()
+        );
+      } else {
+        await sendTelegramMessage(
+          chatId,
+          "❌ Прикрепите оригинальный аудио/видео файл или нажмите 'Пропустить'.",
+          getSkipOrCancelKeyboard()
         );
       }
     }
@@ -991,11 +1040,23 @@ async function processStateStep(
       getCancelKeyboard()
     );
   } else if (state.step === "audio") {
+    let stepNumber = "3/3";
     const questionType = state.type === "add_melody" ? "мелодию" : "голос";
+    
+    if (state.type === "add_voice") {
+      stepNumber = "3/4";
+    }
+    
     await sendTelegramMessage(
       chatId,
-      `📝 Шаг 3/3: Прикрепите аудиофайл (MP3 или OGA) с ${questionType}:`,
+      `📝 Шаг ${stepNumber}: Прикрепите аудиофайл (MP3 или OGA) с ${questionType === "голос" ? "неестественным голосом" : questionType}:`,
       getCancelKeyboard()
+    );
+  } else if (state.step === "originalAudio" && state.type === "add_voice") {
+    await sendTelegramMessage(
+      chatId,
+      "📝 Шаг 4/4: Прикрепите оригинальный аудио/видео файл (необязательно)\n\nЭтот файл будет воспроизводиться после правильного ответа.\n\n📹 Можете прикрепить видео или аудио.\n\nЕсли не хотите добавлять оригинал, нажмите 'Пропустить'.",
+      getSkipOrCancelKeyboard()
     );
   } else if (state.step === "source") {
     await sendTelegramMessage(
@@ -1286,21 +1347,103 @@ async function saveVoiceQuestion(chatId: number, state: UserState) {
     }
   );
 
+  // Загружаем оригинальный аудио/видео файл, если он был предоставлен
+  let originalAudioUrl = null;
+  if (state.data.originalFileId) {
+    const originalFile = await downloadTelegramFile(state.data.originalFileId);
+    let originalExtension = originalFile.extension?.toLowerCase();
+    let originalMimeType = originalFile.mimeType || "application/octet-stream";
+    
+    // Определяем, является ли файл видео
+    const isVideo = originalMimeType.startsWith("video/") ||
+                    ["mp4", "webm", "mov", "avi"].includes(originalExtension || "");
+
+    if (isVideo) {
+      // Обработка видео
+      if (!originalExtension) {
+        const mimeLower = originalMimeType.toLowerCase();
+        if (mimeLower.includes("mp4")) {
+          originalExtension = "mp4";
+        } else if (mimeLower.includes("webm")) {
+          originalExtension = "webm";
+        } else if (mimeLower.includes("quicktime")) {
+          originalExtension = "mov";
+        } else {
+          originalExtension = "mp4"; // По умолчанию MP4
+        }
+      }
+      
+      const originalObjectPath = `audio/voices/${state.data.difficulty}/${timestamp}_original.${originalExtension}`;
+      originalAudioUrl = await supabaseStorageUpload(
+        originalObjectPath,
+        originalFile.buffer,
+        originalMimeType,
+        {
+          upsert: false,
+        }
+      );
+    } else {
+      // Обработка аудио
+      // Нормализуем расширения OGG в OGA
+      if (originalExtension === "oga" || originalExtension === "ogg") {
+        originalExtension = "oga";
+        if (!originalMimeType.includes("ogg")) {
+          originalMimeType = "audio/ogg";
+        }
+      }
+
+      if (!originalExtension) {
+        const mimeLower = originalMimeType.toLowerCase();
+        if (
+          mimeLower.includes("ogg") ||
+          mimeLower.includes("vorbis") ||
+          mimeLower.includes("opus")
+        ) {
+          originalExtension = "oga";
+          originalMimeType = "audio/ogg";
+        } else {
+          originalExtension = "mp3";
+          originalMimeType = "audio/mpeg";
+        }
+      }
+
+      const originalObjectPath = `audio/voices/${state.data.difficulty}/${timestamp}_original.${originalExtension}`;
+      originalAudioUrl = await supabaseStorageUpload(
+        originalObjectPath,
+        originalFile.buffer,
+        originalMimeType,
+        {
+          upsert: false,
+        }
+      );
+    }
+  }
+
   await supabaseRestRequest("guess_voice_questions", {
     method: "POST",
     body: {
       difficulty: state.data.difficulty,
       audio_url: publicUrl,
+      original_audio_url: originalAudioUrl,
       options: state.data.options,
       correct_answer: state.data.correctAnswer,
     },
   });
 
-  await sendTelegramMessage(
-    chatId,
-    `✅ Вопрос "Угадай голос" успешно добавлен!\n\n🎤 Аудио: ${publicUrl}`,
-    getMainMenuKeyboard()
-  );
+  let message = `✅ Вопрос "Угадай голос" успешно добавлен!\n\n🎤 Неестественный голос: ${publicUrl}`;
+  
+  if (originalAudioUrl) {
+    const isVideo = originalAudioUrl.endsWith('.mp4') || 
+                    originalAudioUrl.endsWith('.webm') || 
+                    originalAudioUrl.endsWith('.mov') ||
+                    originalAudioUrl.endsWith('.avi');
+    
+    message += isVideo 
+      ? `\n🎬 Оригинальное видео: ${originalAudioUrl}`
+      : `\n🎵 Оригинальный голос: ${originalAudioUrl}`;
+  }
+
+  await sendTelegramMessage(chatId, message, getMainMenuKeyboard());
 }
 
 async function saveQuoteQuestion(chatId: number, state: UserState) {
@@ -1588,6 +1731,36 @@ function extractAudioFile(message: TelegramMessage) {
   return null;
 }
 
+function extractAudioOrVideoFile(message: TelegramMessage) {
+  // Сначала пытаемся извлечь аудио
+  const audioFile = extractAudioFile(message);
+  if (audioFile) {
+    return audioFile;
+  }
+  
+  // Затем пытаемся извлечь видео
+  if (message.video) {
+    return message.video;
+  }
+  if (message.video_note) {
+    return message.video_note;
+  }
+  if (message.document && message.document.mime_type) {
+    const mimeType = message.document.mime_type.toLowerCase();
+    // Поддерживаем видео форматы
+    if (
+      mimeType.startsWith("video/") ||
+      mimeType === "video/mp4" ||
+      mimeType === "video/webm" ||
+      mimeType === "video/quicktime" ||
+      mimeType === "video/x-msvideo"
+    ) {
+      return message.document;
+    }
+  }
+  return null;
+}
+
 async function downloadTelegramFile(fileId: string) {
   const fileResponse = await fetch(
     `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getFile?file_id=${fileId}`
@@ -1775,6 +1948,14 @@ function getAddQuestionTypeKeyboard() {
 function getCancelKeyboard() {
   return {
     keyboard: [[{ text: "❌ Отмена" }]],
+    resize_keyboard: true,
+    one_time_keyboard: false,
+  };
+}
+
+function getSkipOrCancelKeyboard() {
+  return {
+    keyboard: [[{ text: "⏭ Пропустить" }], [{ text: "❌ Отмена" }]],
     resize_keyboard: true,
     one_time_keyboard: false,
   };

@@ -21,22 +21,32 @@ export default function GuessVoiceGame({
   canGoPrevious = false
 }: GuessVoiceGameProps) {
   const [isPlaying, setIsPlaying] = useState(false)
+  const [isPlayingOriginal, setIsPlayingOriginal] = useState(false)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [showResult, setShowResult] = useState(false)
+  const [isCorrect, setIsCorrect] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
+  const originalAudioRef = useRef<HTMLAudioElement>(null)
+  const originalVideoRef = useRef<HTMLVideoElement>(null)
   const isPlayingRef = useRef(false)
+  
+  // Определяем, является ли оригинал видео
+  const isOriginalVideo = question.originalAudioUrl && 
+    (question.originalAudioUrl.endsWith('.mp4') || 
+     question.originalAudioUrl.endsWith('.webm') || 
+     question.originalAudioUrl.endsWith('.mov') ||
+     question.originalAudioUrl.endsWith('.avi'))
 
-  // Сброс состояния и обновление аудио при смене вопроса
+  // Обновление аудио при смене вопроса (БЕЗ сброса состояния)
   useEffect(() => {
     if (!question?.audioUrl) return
     
     console.log('[GuessVoiceGame] Смена вопроса, новый audioUrl:', question.audioUrl)
     
-    // Сбрасываем состояние воспроизведения
+    // Останавливаем воспроизведение
     isPlayingRef.current = false
     setIsPlaying(false)
-    setSelectedAnswer(null)
-    setShowResult(false)
+    setIsPlayingOriginal(false)
     
     // Обновляем src аудио элемента
     if (audioRef.current) {
@@ -45,6 +55,26 @@ export default function GuessVoiceGame({
       audioRef.current.src = question.audioUrl
       audioRef.current.load()
       console.log('[GuessVoiceGame] Аудио обновлено:', audioRef.current.src)
+    }
+    
+    // Обновляем src оригинального аудио/видео
+    if (question.originalAudioUrl) {
+      const isVideo = question.originalAudioUrl.endsWith('.mp4') || 
+                      question.originalAudioUrl.endsWith('.webm') || 
+                      question.originalAudioUrl.endsWith('.mov') ||
+                      question.originalAudioUrl.endsWith('.avi')
+      
+      if (isVideo && originalVideoRef.current) {
+        originalVideoRef.current.pause()
+        originalVideoRef.current.currentTime = 0
+        originalVideoRef.current.src = question.originalAudioUrl
+        originalVideoRef.current.load()
+      } else if (!isVideo && originalAudioRef.current) {
+        originalAudioRef.current.pause()
+        originalAudioRef.current.currentTime = 0
+        originalAudioRef.current.src = question.originalAudioUrl
+        originalAudioRef.current.load()
+      }
     }
   }, [question?.audioUrl])
 
@@ -55,8 +85,17 @@ export default function GuessVoiceGame({
         audioRef.current.pause()
         audioRef.current.src = ''
       }
+      if (originalAudioRef.current) {
+        originalAudioRef.current.pause()
+        originalAudioRef.current.src = ''
+      }
+      if (originalVideoRef.current) {
+        originalVideoRef.current.pause()
+        originalVideoRef.current.src = ''
+      }
       isPlayingRef.current = false
       setIsPlaying(false)
+      setIsPlayingOriginal(false)
     }
   }, [])
 
@@ -102,21 +141,77 @@ export default function GuessVoiceGame({
     }
   }
 
-  const handleSelect = (answer: string) => {
-    if (showResult) return
-    setSelectedAnswer(answer)
-    const isCorrect = answer === question.correctAnswer
-    setShowResult(true)
-    handlePause()
+  const handlePlayOriginal = async () => {
+    if (isPlayingOriginal) return
     
-    setTimeout(() => {
-      onAnswer(isCorrect)
-      setSelectedAnswer(null)
-      setShowResult(false)
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0
+    const mediaRef = isOriginalVideo ? originalVideoRef.current : originalAudioRef.current
+    if (!mediaRef) return
+    
+    // Останавливаем обычное аудио
+    if (audioRef.current) {
+      audioRef.current.pause()
+      setIsPlaying(false)
+      isPlayingRef.current = false
+    }
+    
+    try {
+      // Проверяем готовность медиа
+      if (mediaRef.readyState >= 2) {
+        await mediaRef.play()
+        setIsPlayingOriginal(true)
+      } else {
+        // Ждем загрузки
+        mediaRef.addEventListener('canplay', async () => {
+          try {
+            await mediaRef.play()
+            setIsPlayingOriginal(true)
+          } catch (err) {
+            if (err instanceof Error && err.name !== 'AbortError') {
+              console.error('Ошибка воспроизведения оригинала:', err)
+            }
+            setIsPlayingOriginal(false)
+          }
+        }, { once: true })
       }
-    }, 2000)
+    } catch (error) {
+      if (error instanceof Error && error.name !== 'AbortError') {
+        console.error('Ошибка воспроизведения оригинала:', error)
+      }
+      setIsPlayingOriginal(false)
+    }
+  }
+
+  const handlePauseOriginal = () => {
+    const mediaRef = isOriginalVideo ? originalVideoRef.current : originalAudioRef.current
+    if (mediaRef) {
+      mediaRef.pause()
+      setIsPlayingOriginal(false)
+    }
+  }
+
+  const handleSelect = (answer: string) => {
+    if (isCorrect) return // Блокируем только если уже угадали правильно
+    if (selectedAnswer !== null) return // Блокируем, если идёт анимация
+    
+    setSelectedAnswer(answer)
+    const correct = answer === question.correctAnswer
+    setIsCorrect(correct)
+    setShowResult(true)
+    
+    if (correct) {
+      // Правильный ответ - останавливаем аудио и показываем результат
+      handlePause()
+      onAnswer(correct)
+    } else {
+      // Неправильный ответ - показываем анимацию и держим 2 секунды
+      onAnswer(correct)
+      // Держим результат 2 секунды, чтобы пользователь успел увидеть и понять
+      setTimeout(() => {
+        setSelectedAnswer(null)
+        setShowResult(false)
+        setIsCorrect(false)
+      }, 2000)
+    }
   }
 
   return (
@@ -189,6 +284,71 @@ export default function GuessVoiceGame({
                 }
               }}
             />
+            {question.originalAudioUrl && !isOriginalVideo && (
+              <audio
+                key={question.originalAudioUrl}
+                ref={originalAudioRef}
+                src={question.originalAudioUrl}
+                preload="auto"
+                crossOrigin="anonymous"
+                onEnded={() => {
+                  setIsPlayingOriginal(false)
+                }}
+                onError={(e) => {
+                  const target = e.target as HTMLAudioElement
+                  if (target.error) {
+                    const errorCode = target.error.code
+                    if (errorCode === 2 || errorCode === 4) {
+                      // Сетевые ошибки или неподдерживаемый формат - просто игнорируем
+                    } else if (errorCode !== 1) {
+                      console.error('Ошибка загрузки оригинального аудио:', target.error)
+                    }
+                  }
+                  setIsPlayingOriginal(false)
+                }}
+                onAbort={() => {
+                  setIsPlayingOriginal(false)
+                }}
+                onLoadedMetadata={() => {
+                  if (originalAudioRef.current) {
+                    originalAudioRef.current.currentTime = 0
+                  }
+                }}
+              />
+            )}
+            {question.originalAudioUrl && isOriginalVideo && (
+              <video
+                key={question.originalAudioUrl}
+                ref={originalVideoRef}
+                src={question.originalAudioUrl}
+                preload="auto"
+                crossOrigin="anonymous"
+                className="hidden"
+                onEnded={() => {
+                  setIsPlayingOriginal(false)
+                }}
+                onError={(e) => {
+                  const target = e.target as HTMLVideoElement
+                  if (target.error) {
+                    const errorCode = target.error.code
+                    if (errorCode === 2 || errorCode === 4) {
+                      // Сетевые ошибки или неподдерживаемый формат - просто игнорируем
+                    } else if (errorCode !== 1) {
+                      console.error('Ошибка загрузки оригинального видео:', target.error)
+                    }
+                  }
+                  setIsPlayingOriginal(false)
+                }}
+                onAbort={() => {
+                  setIsPlayingOriginal(false)
+                }}
+                onLoadedMetadata={() => {
+                  if (originalVideoRef.current) {
+                    originalVideoRef.current.currentTime = 0
+                  }
+                }}
+              />
+            )}
             <div className="flex gap-4">
               <motion.button
                 onClick={isPlaying ? handlePause : handlePlay}
@@ -198,7 +358,39 @@ export default function GuessVoiceGame({
               >
                 {isPlaying ? '⏸ Пауза' : '▶ Воспроизвести'}
               </motion.button>
+              
+              {showResult && isCorrect && question.originalAudioUrl && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  onClick={isPlayingOriginal ? handlePauseOriginal : handlePlayOriginal}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-green-500/80 hover:bg-green-500 text-white px-6 py-3 rounded-lg text-lg font-semibold"
+                >
+                  {isPlayingOriginal ? '⏸ Остановить' : isOriginalVideo ? '🎬 Видео оригинал' : '🎵 Аудио оригинал'}
+                </motion.button>
+              )}
             </div>
+            
+            {/* Видеоплеер для оригинала */}
+            {showResult && isCorrect && isOriginalVideo && isPlayingOriginal && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="mt-4 rounded-lg overflow-hidden border-2 border-green-400"
+              >
+                <video
+                  src={question.originalAudioUrl}
+                  controls
+                  autoPlay
+                  className="w-full max-w-md mx-auto rounded-lg"
+                  onEnded={() => setIsPlayingOriginal(false)}
+                  onPause={() => setIsPlayingOriginal(false)}
+                />
+              </motion.div>
+            )}
+            
             <p className="text-white/60 text-sm mt-2 text-center">
               Звук может быть неестественным
             </p>
@@ -231,42 +423,65 @@ export default function GuessVoiceGame({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {question.options.map((option: string) => (
-          <motion.button
-            key={option}
-            onClick={() => handleSelect(option)}
-            disabled={showResult}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className={`p-4 rounded-lg text-lg font-semibold transition-all ${
-              showResult && selectedAnswer === option
-                ? option === question.correctAnswer
-                  ? 'bg-green-500 text-white'
-                  : 'bg-red-500 text-white'
-                : showResult && option === question.correctAnswer
-                ? 'bg-green-500 text-white'
-                : 'bg-white/20 text-white hover:bg-white/30'
-            } disabled:opacity-50`}
-          >
-            {option}
-          </motion.button>
-        ))}
+        {question.options.map((option: string) => {
+          const isSelected = showResult && selectedAnswer === option
+          const shouldShowGreen = isSelected && isCorrect
+          const shouldShowRed = isSelected && !isCorrect
+          
+          return (
+            <motion.button
+              key={option}
+              onClick={() => handleSelect(option)}
+              disabled={showResult && isCorrect} // Блокируем только при правильном ответе
+              whileHover={{ scale: (showResult && isCorrect) ? 1 : 1.02 }}
+              whileTap={{ scale: (showResult && isCorrect) ? 1 : 0.98 }}
+              initial={false}
+              animate={{
+                backgroundColor: shouldShowGreen
+                  ? 'rgb(34, 197, 94)'
+                  : shouldShowRed
+                  ? 'rgb(239, 68, 68)'
+                  : 'rgba(255, 255, 255, 0.2)',
+              }}
+              transition={{
+                duration: shouldShowRed ? 0.5 : 0.3,
+                ease: shouldShowRed ? 'easeOut' : 'easeOut',
+              }}
+              className={`p-4 rounded-lg text-lg font-semibold text-white transition-all ${
+                !(showResult && isCorrect) ? 'hover:bg-white/30' : ''
+              }`}
+            >
+              {option}
+            </motion.button>
+          )
+        })}
       </div>
 
-      {showResult && (
+      {showResult && isCorrect && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mt-6 text-center"
         >
-          <p className={`text-2xl font-bold ${
-            selectedAnswer === question.correctAnswer ? 'text-green-400' : 'text-red-400'
-          }`}>
-            {selectedAnswer === question.correctAnswer ? '✓ Правильно!' : '✗ Неправильно'}
+          <p className="text-2xl font-bold text-green-400">
+            ✓ Правильно!
+          </p>
+        </motion.div>
+      )}
+      
+      {showResult && !isCorrect && selectedAnswer !== null && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-6 text-center"
+        >
+          <p className="text-2xl font-bold text-red-400">
+            ✗ Неправильно
           </p>
         </motion.div>
       )}
     </div>
   )
 }
+
 
