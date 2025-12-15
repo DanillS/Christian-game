@@ -229,7 +229,7 @@ export default function RoundSelector() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="grid w-full max-w-4xl flex-1 overflow-auto min-h-0 px-2 md:px-4"
+        className="grid w-full max-w-4xl flex-1 overflow-visible min-h-0 px-2 md:px-4 py-2"
         style={{ 
           gridTemplateColumns: 'repeat(2, 1fr)',
           gap: '16px',
@@ -246,7 +246,7 @@ export default function RoundSelector() {
               transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
             }}
             whileTap={{ scale: 0.95 }}
-            className="cursor-pointer relative flex flex-col items-center justify-start w-full"
+            className="cursor-pointer relative flex flex-col items-center justify-start w-full hover:z-10"
             style={{ 
               willChange: "transform"
             }}
