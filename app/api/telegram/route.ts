@@ -1516,14 +1516,17 @@ async function saveQuoteQuestion(chatId: number, state: UserState) {
     method: "POST",
     body: {
       difficulty: state.data.difficulty,
-      question: state.data.question,
-      correct_answers: state.data.correctAnswers,
+      quote: state.data.question,
+      question_type: "source",
+      options: state.data.correctAnswers,
+      correct_answer: state.data.correctAnswers[0],
+      source: "",
     },
   });
 
   await sendTelegramMessage(
     chatId,
-    `✅ Библейская цитата успешно добавлена!\n\nВопрос: ${state.data.question}\nОтветы: ${state.data.correctAnswers.join(", ")}`,
+    `✅ Библейская цитата успешно добавлена!\n\nВопрос: ${state.data.question}\nОтвет: ${state.data.correctAnswers[0]}`,
     getMainMenuKeyboard()
   );
 }
