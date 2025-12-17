@@ -1,21 +1,23 @@
 // Файл для добавления вопросов раунда "Библейские Цитаты"
-// Добавьте свои вопросы в массив
+// Формат: question (текст вопроса), correctAnswers (массив правильных ответов)
 
-export const bibleQuotesData: any[] = [
+export interface BibleQuoteQuestion {
+  question: string;
+  correctAnswers: string[];
+}
+
+export const bibleQuotesData: BibleQuoteQuestion[] = [
   {
-    quote: 'Ибо так возлюбил Бог мир, что отдал Сына Своего Единородного',
-    questionType: 'source', // 'source' или 'continue'
-    options: ['Иоанна 3:16', 'Матфея 5:3', 'Псалом 22:1', 'Бытие 1:1'],
-    correctAnswer: 'Иоанна 3:16',
-    source: 'Иоанна 3:16',
+    question:
+      'Откуда цитата: "Ибо так возлюбил Бог мир, что отдал Сына Своего Единородного"?',
+    correctAnswers: ["Иоанна 3:16", "Ин 3:16", "Иоанн 3:16"],
   },
   {
-    quote: 'Господь - Пастырь мой;',
-    questionType: 'continue',
-    options: ['я ни в чем не буду нуждаться', 'я буду богат', 'я буду счастлив', 'я буду здоров'],
-    correctAnswer: 'я ни в чем не буду нуждаться',
-    source: 'Псалом 22:1',
+    question: 'Продолжите: "Господь - Пастырь мой; ..."',
+    correctAnswers: [
+      "я ни в чем не буду нуждаться",
+      "ни в чем не буду нуждаться",
+    ],
   },
   // Добавьте больше вопросов здесь
-]
-
+];

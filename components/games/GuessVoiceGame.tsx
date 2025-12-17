@@ -25,12 +25,14 @@ export default function GuessVoiceGame({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPlayingOriginal, setIsPlayingOriginal] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [textInput, setTextInput] = useState("");
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const originalAudioRef = useRef<HTMLAudioElement>(null);
   const originalVideoRef = useRef<HTMLVideoElement>(null);
   const isPlayingRef = useRef(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Определяем, является ли оригинал видео
   const isOriginalVideo =
@@ -229,6 +231,35 @@ export default function GuessVoiceGame({
         setSelectedAnswer(null);
         setShowResult(false);
         setIsCorrect(false);
+      }, 2000);
+    }
+  };
+
+  // Проверка текстового ввода
+  const handleTextSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isCorrect) return;
+    if (!textInput.trim()) return;
+
+    const answer = textInput.trim();
+    setSelectedAnswer(answer);
+    
+    // Проверяем ответ (без учета регистра)
+    const correct = answer.toLowerCase() === question.correctAnswer.toLowerCase();
+    setIsCorrect(correct);
+    setShowResult(true);
+
+    if (correct) {
+      handlePause();
+      onAnswer(correct);
+    } else {
+      onAnswer(correct);
+      setTimeout(() => {
+        setSelectedAnswer(null);
+        setShowResult(false);
+        setIsCorrect(false);
+        setTextInput("");
+        inputRef.current?.focus();
       }, 2000);
     }
   };
@@ -565,63 +596,65 @@ export default function GuessVoiceGame({
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
-          {question.options.map((option: string) => {
-            const isSelected = showResult && selectedAnswer === option;
-            const shouldShowGreen = isSelected && isCorrect;
-            const shouldShowRed = isSelected && !isCorrect;
-
-            return (
-              <motion.button
-                key={option}
-                onClick={() => handleSelect(option)}
-                disabled={showResult && isCorrect}
-                whileHover={
-                  showResult && isCorrect
-                    ? {}
-                    : {
-                        scale: 1.02,
-                        backgroundColor: "rgba(255, 255, 255, 0.9)",
-                        color: "#000",
-                      }
-                }
-                whileTap={{ scale: showResult && isCorrect ? 1 : 0.98 }}
-                initial={false}
-                className={`min-h-[44px] p-2 md:p-2.5 rounded-lg text-xs md:text-sm font-semibold relative overflow-hidden transition-all cursor-pointer flex items-center justify-center ${
-                  shouldShowGreen
-                    ? "bg-green-500 text-white"
-                    : shouldShowRed
-                    ? "bg-red-500 text-white"
-                    : "text-white"
-                }`}
-                style={{
-                  background: shouldShowGreen
-                    ? "rgba(34, 197, 94, 0.8)"
-                    : shouldShowRed
-                    ? "rgba(239, 68, 68, 0.8)"
-                    : "transparent",
-                  border: shouldShowGreen
-                    ? "1.5px solid rgba(34, 197, 94, 0.8)"
-                    : shouldShowRed
-                    ? "1.5px solid rgba(239, 68, 68, 0.8)"
-                    : "1.5px solid rgba(255, 255, 255, 0.5)",
-                  boxShadow: shouldShowGreen
-                    ? "0 2px 8px rgba(34, 197, 94, 0.3)"
-                    : shouldShowRed
-                    ? "0 2px 8px rgba(239, 68, 68, 0.3)"
-                    : "0 2px 8px rgba(0, 0, 0, 0.15)",
-                }}
-                transition={{
-                  duration: shouldShowRed ? 0.5 : 0.3,
-                  ease: "easeOut",
-                }}
-              >
-                {option}
-              </motion.button>
-            );
-          })}
-        </div>
+      <div className="flex-1 overflow-visible min-h-0">
+        <form onSubmit={handleTextSubmit} className="space-y-3 overflow-visible">
+          <motion.div
+            animate={{
+              borderColor: showResult
+                ? isCorrect
+                  ? "rgba(34, 197, 94, 0.8)"
+                  : "rgba(239, 68, 68, 0.8)"
+                : "rgba(255, 255, 255, 0.5)",
+              backgroundColor: showResult
+                ? isCorrect
+                  ? "rgba(34, 197, 94, 0.2)"
+                  : "rgba(239, 68, 68, 0.2)"
+                : "rgba(255, 255, 255, 0.1)",
+            }}
+            transition={{ duration: 0.3 }}
+            className="relative"
+          >
+            <input
+              ref={inputRef}
+              type="text"
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              disabled={showResult && isCorrect}
+              placeholder="Введите ответ..."
+              className="w-full px-4 py-3 rounded-xl bg-transparent text-white placeholder-white/50 border-2 focus:outline-none focus:border-white/80 transition-all text-sm md:text-base"
+              style={{
+                border: showResult
+                  ? isCorrect
+                    ? "2px solid rgba(34, 197, 94, 0.8)"
+                    : "2px solid rgba(239, 68, 68, 0.8)"
+                  : "2px solid rgba(255, 255, 255, 0.5)",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+                backdropFilter: "blur(10px)",
+              }}
+              autoComplete="off"
+            />
+          </motion.div>
+          
+          <motion.button
+            type="submit"
+            disabled={showResult && isCorrect}
+            whileHover={
+              showResult && isCorrect
+                ? {}
+                : { scale: 1.02 }
+            }
+            whileTap={{ scale: showResult && isCorrect ? 1 : 0.98 }}
+            className="w-full py-3 rounded-xl text-white font-medium transition-all disabled:opacity-50 relative z-10"
+            style={{
+              background: "rgba(255, 255, 255, 0.15)",
+              border: "2px solid rgba(255, 255, 255, 0.5)",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+              backdropFilter: "blur(10px)",
+            }}
+          >
+            Проверить
+          </motion.button>
+        </form>
       </div>
 
       {showResult && isCorrect && (

@@ -1,34 +1,96 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 
 interface BibleQuotesGameProps {
-  question: any;
+  question: {
+    question: string;
+    correctAnswers: string[];
+  };
   onAnswer: (isCorrect: boolean) => void;
+  onNext?: () => void;
+  onPrevious?: () => void;
+  canGoNext?: boolean;
+  canGoPrevious?: boolean;
   onBack?: () => void;
 }
 
 export default function BibleQuotesGame({
   question,
   onAnswer,
+  onNext,
+  onPrevious,
+  canGoNext = false,
+  canGoPrevious = false,
   onBack,
 }: BibleQuotesGameProps) {
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [textInput, setTextInput] = useState("");
+  const [attempts, setAttempts] = useState(0);
   const [showResult, setShowResult] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [showAnswerButton, setShowAnswerButton] = useState(false);
+  const [revealedAnswerIndex, setRevealedAnswerIndex] = useState(0);
+  const [showingAnswer, setShowingAnswer] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleSelect = (answer: string) => {
-    if (showResult) return;
-    setSelectedAnswer(answer);
-    const isCorrect = answer === question.correctAnswer;
+  // Сброс состояния при смене вопроса
+  useEffect(() => {
+    setTextInput("");
+    setAttempts(0);
+    setShowResult(false);
+    setIsCorrect(false);
+    setShowAnswerButton(false);
+    setRevealedAnswerIndex(0);
+    setShowingAnswer(false);
+  }, [question]);
+
+  const checkAnswer = (answer: string): boolean => {
+    const normalizedAnswer = answer.toLowerCase().trim();
+    return question.correctAnswers.some(
+      (correct) => correct.toLowerCase().trim() === normalizedAnswer
+    );
+  };
+
+  const handleTextSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isCorrect || showingAnswer) return;
+    if (!textInput.trim()) return;
+
+    const answer = textInput.trim();
+    const correct = checkAnswer(answer);
+
+    setIsCorrect(correct);
     setShowResult(true);
 
-    setTimeout(() => {
-      onAnswer(isCorrect);
-      setSelectedAnswer(null);
-      setShowResult(false);
-    }, 2000);
+    if (correct) {
+      onAnswer(true);
+    } else {
+      const newAttempts = attempts + 1;
+      setAttempts(newAttempts);
+      onAnswer(false);
+
+      if (newAttempts >= 3) {
+        setShowAnswerButton(true);
+      }
+
+      setTimeout(() => {
+        setShowResult(false);
+        setTextInput("");
+        inputRef.current?.focus();
+      }, 1500);
+    }
   };
+
+  const handleShowAnswer = () => {
+    setShowingAnswer(true);
+    // Циклический показ ответов
+    setRevealedAnswerIndex(
+      (prev) => (prev + 1) % question.correctAnswers.length
+    );
+  };
+
+  const currentRevealedAnswer = question.correctAnswers[revealedAnswerIndex];
 
   return (
     <div
@@ -45,10 +107,7 @@ export default function BibleQuotesGame({
         <motion.button
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{
-            duration: 0.4,
-            ease: [0.16, 1, 0.3, 1],
-          }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           whileHover={{
             scale: 1.05,
             backgroundColor: "rgba(255, 255, 255, 0.9)",
@@ -82,10 +141,80 @@ export default function BibleQuotesGame({
         </motion.button>
       )}
 
-      <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4 text-center text-white">
-        📖 Библейские Цитаты 🎄
-      </h2>
+      {/* Навигация */}
+      <div className="flex items-center justify-between mb-3 md:mb-4 pt-10 md:pt-0">
+        {canGoPrevious && onPrevious ? (
+          <motion.button
+            onClick={onPrevious}
+            whileHover={{
+              scale: 1.05,
+              backgroundColor: "rgba(255, 255, 255, 0.9)",
+              color: "#000",
+            }}
+            whileTap={{ scale: 0.95 }}
+            className="text-white p-2 rounded-lg"
+            style={{
+              background: "transparent",
+              border: "1.5px solid rgba(255, 255, 255, 0.5)",
+            }}
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </motion.button>
+        ) : (
+          <div className="w-10" />
+        )}
 
+        <h2 className="text-lg md:text-xl font-bold text-center text-white flex-1">
+          📖 Библейские Цитаты 🎄
+        </h2>
+
+        {canGoNext && onNext ? (
+          <motion.button
+            onClick={onNext}
+            whileHover={{
+              scale: 1.05,
+              backgroundColor: "rgba(255, 255, 255, 0.9)",
+              color: "#000",
+            }}
+            whileTap={{ scale: 0.95 }}
+            className="text-white p-2 rounded-lg"
+            style={{
+              background: "transparent",
+              border: "1.5px solid rgba(255, 255, 255, 0.5)",
+            }}
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </motion.button>
+        ) : (
+          <div className="w-10" />
+        )}
+      </div>
+
+      {/* Вопрос */}
       <div className="mb-3 md:mb-4 flex-shrink-0">
         <div
           style={{
@@ -95,89 +224,119 @@ export default function BibleQuotesGame({
           className="rounded-lg p-3 md:p-4 mb-2 backdrop-blur-md"
         >
           <p className="text-sm md:text-base text-white text-center leading-relaxed">
-            "{question.quote}"
+            {question.question}
           </p>
         </div>
 
-        {question.questionType === "source" && (
-          <p className="text-white/80 text-center text-xs md:text-sm">
-            Откуда эта цитата?
-          </p>
+        {/* Счетчик попыток */}
+        <p className="text-white/60 text-center text-xs">
+          Попыток: {attempts}/3
+        </p>
+      </div>
+
+      {/* Форма ввода */}
+      <div className="flex-1 overflow-y-auto min-h-0 px-1">
+        <form onSubmit={handleTextSubmit} className="space-y-3">
+          <motion.div
+            animate={{
+              borderColor: showResult
+                ? isCorrect
+                  ? "rgba(34, 197, 94, 0.8)"
+                  : "rgba(239, 68, 68, 0.8)"
+                : "rgba(255, 255, 255, 0.5)",
+              backgroundColor: showResult
+                ? isCorrect
+                  ? "rgba(34, 197, 94, 0.2)"
+                  : "rgba(239, 68, 68, 0.2)"
+                : "rgba(255, 255, 255, 0.1)",
+            }}
+            transition={{ duration: 0.3 }}
+            className="relative"
+          >
+            <input
+              ref={inputRef}
+              type="text"
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              disabled={isCorrect || showingAnswer}
+              placeholder="Введите ответ..."
+              className="w-full px-4 py-3 rounded-xl bg-transparent text-white placeholder-white/50 border-2 focus:outline-none focus:border-white/80 transition-all text-sm md:text-base"
+              style={{
+                border: showResult
+                  ? isCorrect
+                    ? "2px solid rgba(34, 197, 94, 0.8)"
+                    : "2px solid rgba(239, 68, 68, 0.8)"
+                  : "2px solid rgba(255, 255, 255, 0.5)",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+                backdropFilter: "blur(10px)",
+              }}
+              autoComplete="off"
+            />
+          </motion.div>
+
+          <motion.button
+            type="submit"
+            disabled={isCorrect || showingAnswer}
+            whileHover={isCorrect || showingAnswer ? {} : { scale: 1.02 }}
+            whileTap={{ scale: isCorrect || showingAnswer ? 1 : 0.98 }}
+            className="w-full py-3 rounded-xl text-white font-medium transition-all disabled:opacity-50 relative z-10"
+            style={{
+              background: "rgba(255, 255, 255, 0.15)",
+              border: "2px solid rgba(255, 255, 255, 0.5)",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+              backdropFilter: "blur(10px)",
+            }}
+          >
+            Проверить
+          </motion.button>
+        </form>
+
+        {/* Кнопка показать ответ */}
+        {showAnswerButton && !isCorrect && (
+          <motion.button
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            onClick={handleShowAnswer}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full mt-3 py-3 rounded-xl text-white font-medium transition-all relative z-10"
+            style={{
+              background: "rgba(255, 193, 7, 0.3)",
+              border: "2px solid rgba(255, 193, 7, 0.6)",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+              backdropFilter: "blur(10px)",
+            }}
+          >
+            {showingAnswer ? "Показать другой ответ" : "Показать ответ"}
+          </motion.button>
         )}
 
-        {question.questionType === "continue" && (
-          <p className="text-white/80 text-center text-xs md:text-sm">
-            Продолжите цитату:
-          </p>
+        {/* Показ правильного ответа */}
+        {showingAnswer && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-3 p-3 rounded-xl text-center"
+            style={{
+              background: "rgba(255, 193, 7, 0.2)",
+              border: "1px solid rgba(255, 193, 7, 0.4)",
+            }}
+          >
+            <p className="text-white/80 text-xs mb-1">Правильный ответ:</p>
+            <p className="text-yellow-300 font-semibold">
+              {currentRevealedAnswer}
+            </p>
+            {question.correctAnswers.length > 1 && (
+              <p className="text-white/50 text-xs mt-1">
+                (ответ {revealedAnswerIndex + 1} из{" "}
+                {question.correctAnswers.length})
+              </p>
+            )}
+          </motion.div>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
-          {question.options.map((option: string) => {
-            const isSelected = showResult && selectedAnswer === option;
-            const shouldShowGreen =
-              isSelected && option === question.correctAnswer;
-            const shouldShowRed =
-              isSelected && option !== question.correctAnswer;
-            const shouldShowCorrect =
-              showResult && option === question.correctAnswer;
-
-            return (
-              <motion.button
-                key={option}
-                onClick={() => handleSelect(option)}
-                disabled={showResult}
-                whileHover={
-                  showResult
-                    ? {}
-                    : {
-                        scale: 1.02,
-                        backgroundColor: "rgba(255, 255, 255, 0.9)",
-                        color: "#000",
-                      }
-                }
-                whileTap={{ scale: showResult ? 1 : 0.98 }}
-                initial={false}
-                className={`min-h-[44px] p-2 md:p-2.5 rounded-lg text-xs md:text-sm font-semibold relative overflow-hidden transition-all cursor-pointer flex items-center justify-center ${
-                  shouldShowGreen || shouldShowCorrect
-                    ? "bg-green-500 text-white"
-                    : shouldShowRed
-                    ? "bg-red-500 text-white"
-                    : "text-white"
-                }`}
-                style={{
-                  background:
-                    shouldShowGreen || shouldShowCorrect
-                      ? "rgba(34, 197, 94, 0.8)"
-                      : shouldShowRed
-                      ? "rgba(239, 68, 68, 0.8)"
-                      : "transparent",
-                  border:
-                    shouldShowGreen || shouldShowCorrect
-                      ? "1.5px solid rgba(34, 197, 94, 0.8)"
-                      : shouldShowRed
-                      ? "1.5px solid rgba(239, 68, 68, 0.8)"
-                      : "1.5px solid rgba(255, 255, 255, 0.5)",
-                  boxShadow:
-                    shouldShowGreen || shouldShowCorrect
-                      ? "0 2px 8px rgba(34, 197, 94, 0.3)"
-                      : shouldShowRed
-                      ? "0 2px 8px rgba(239, 68, 68, 0.3)"
-                      : "0 2px 8px rgba(0, 0, 0, 0.15)",
-                }}
-                transition={{
-                  duration: 0.3,
-                  ease: "easeOut",
-                }}
-              >
-                {option}
-              </motion.button>
-            );
-          })}
-        </div>
-      </div>
-
+      {/* Результат */}
       {showResult && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -186,20 +345,11 @@ export default function BibleQuotesGame({
         >
           <p
             className={`text-base md:text-lg font-bold ${
-              selectedAnswer === question.correctAnswer
-                ? "text-green-400"
-                : "text-red-400"
+              isCorrect ? "text-green-400" : "text-red-400"
             }`}
           >
-            {selectedAnswer === question.correctAnswer
-              ? "✓ Правильно!"
-              : "✗ Неправильно"}
+            {isCorrect ? "✓ Правильно!" : "✗ Неправильно"}
           </p>
-          {question.source && (
-            <p className="text-white/80 mt-1 text-xs md:text-sm">
-              {question.source}
-            </p>
-          )}
         </motion.div>
       )}
     </div>

@@ -272,6 +272,10 @@ export default function RoundGame({
           <BibleQuotesGame
             question={currentQuestion}
             onAnswer={(isCorrect) => handleAnswer("", isCorrect)}
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+            canGoNext={showArrows}
+            canGoPrevious={showArrows}
             onBack={onBackHandler}
           />
         );

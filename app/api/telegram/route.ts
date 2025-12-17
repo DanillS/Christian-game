@@ -67,6 +67,7 @@ interface UserState {
     | "add_melody"
     | "add_voice"
     | "add_quote"
+    | "add_calendar"
     | "add_icon"
     | "login"
     | null;
@@ -223,6 +224,17 @@ async function processUpdate(update: TelegramUpdate) {
           chat: message.chat,
         } as TelegramMessage;
         await startAddQuote(mockMessage);
+      }
+      return;
+    }
+
+    if (text === "📅 Календарь") {
+      if (userId) {
+        const mockMessage = {
+          from: message.from,
+          chat: message.chat,
+        } as TelegramMessage;
+        await startAddCalendar(mockMessage);
       }
       return;
     }
@@ -700,13 +712,31 @@ async function startAddQuote(message: TelegramMessage) {
 
   userStates.set(userId, {
     type: "add_quote",
-    step: "questionType",
-    data: { difficulty: "medium" },
+    step: "question",
+    data: { difficulty: "medium", correctAnswers: [] },
   });
   await sendTelegramMessage(
     chatId,
-    "📖 Добавление библейской цитаты\n\n📝 Шаг 1/5: Выберите тип вопроса:",
-    getQuestionTypeKeyboard("quote_type")
+    "📖 Добавление библейской цитаты\n\n📝 Шаг 1/3: Введите текст вопроса:",
+    getCancelKeyboard()
+  );
+}
+
+async function startAddCalendar(message: TelegramMessage) {
+  if (!(await ensureAuthorized(message))) return;
+  const userId = message.from?.id;
+  const chatId = message.chat.id;
+  if (!userId) return;
+
+  userStates.set(userId, {
+    type: "add_calendar",
+    step: "question",
+    data: { difficulty: "medium", options: [] },
+  });
+  await sendTelegramMessage(
+    chatId,
+    "📅 Добавление вопроса в Календарь\n\n📝 Шаг 1/4: Введите текст вопроса:",
+    getCancelKeyboard()
   );
 }
 
@@ -790,39 +820,15 @@ async function handleStateStep(message: TelegramMessage, state: UserState) {
     return;
   }
 
-  if (state.step === "questionType" && state.type === "add_quote") {
-    // Обработка выбора типа вопроса через текстовые сообщения
-    const text = (message.text || message.caption || "").trim();
-    // Если это не кнопка, а обычный текст - игнорируем, так как тип выбирается через кнопки
-    // Но если пользователь нажал "➡️ Продолжить", это обрабатывается выше
-    if (
-      text &&
-      text !== "➡️ Продолжить" &&
-      text !== "📖 Источник" &&
-      text !== "❌ Отмена"
-    ) {
-      // Можно добавить обработку текстового выбора типа, но пока используем только кнопки
-      await sendTelegramMessage(
-        chatId,
-        "Выберите тип вопроса с помощью кнопок ниже:",
-        getQuestionTypeKeyboard("quote_type")
-      );
-    }
-    return;
-  }
-
-  if (state.step === "quote") {
+  // Обработка шагов для библейских цитат (новая логика)
+  if (state.step === "question" && state.type === "add_quote") {
     const text = (message.text || message.caption || "").trim();
     if (text) {
-      state.data.quote = text;
-      state.step = "options";
+      state.data.question = text;
+      state.step = "correctAnswers";
       const keyboard = {
         keyboard: [
-          [
-            {
-              text: "✅ Готово (минимум 2 варианта)",
-            },
-          ],
+          [{ text: "✅ Готово (минимум 1 ответ)" }],
           [{ text: "❌ Отмена" }],
         ],
         resize_keyboard: true,
@@ -830,18 +836,67 @@ async function handleStateStep(message: TelegramMessage, state: UserState) {
       };
       await sendTelegramMessage(
         chatId,
-        "📝 Шаг 3/5: Цитата сохранена.\n\nВведите первый вариант ответа (минимум 2 варианта):",
+        "📝 Шаг 2/3: Вопрос сохранен.\n\nВведите правильный ответ (можно несколько вариантов):",
         keyboard
       );
     }
     return;
   }
 
-  if (state.step === "source") {
+  if (state.step === "correctAnswers" && state.type === "add_quote") {
+    const text = (message.text || message.caption || "").trim();
+    if (text === "✅ Готово (минимум 1 ответ)") {
+      if (!state.data.correctAnswers || state.data.correctAnswers.length < 1) {
+        await sendTelegramMessage(
+          chatId,
+          "❌ Нужен минимум 1 правильный ответ. Введите ответ.",
+          getCancelKeyboard()
+        );
+        return;
+      }
+      await finalizeQuestion(chatId, userId, state);
+      return;
+    }
+    if (text && text !== "❌ Отмена") {
+      if (!state.data.correctAnswers) state.data.correctAnswers = [];
+      state.data.correctAnswers.push(text);
+      const count = state.data.correctAnswers.length;
+      const keyboard = {
+        keyboard: [
+          [{ text: "✅ Готово (минимум 1 ответ)" }],
+          [{ text: "❌ Отмена" }],
+        ],
+        resize_keyboard: true,
+        one_time_keyboard: false,
+      };
+      await sendTelegramMessage(
+        chatId,
+        `✅ Ответ ${count} добавлен: "${text}"\n\nВведите еще один правильный ответ или нажмите "Готово":`,
+        keyboard
+      );
+    }
+    return;
+  }
+
+  // Обработка шагов для календаря
+  if (state.step === "question" && state.type === "add_calendar") {
     const text = (message.text || message.caption || "").trim();
     if (text) {
-      state.data.source = text;
-      await finalizeQuestion(chatId, userId, state);
+      state.data.question = text;
+      state.step = "options";
+      const keyboard = {
+        keyboard: [
+          [{ text: "✅ Готово (минимум 2 варианта)" }],
+          [{ text: "❌ Отмена" }],
+        ],
+        resize_keyboard: true,
+        one_time_keyboard: false,
+      };
+      await sendTelegramMessage(
+        chatId,
+        "📝 Шаг 2/4: Вопрос сохранен.\n\nВведите первый вариант ответа (минимум 2 варианта):",
+        keyboard
+      );
     }
     return;
   }
@@ -1115,7 +1170,17 @@ async function finalizeQuestion(
       }
       await saveVoiceQuestion(chatId, state);
     } else if (state.type === "add_quote") {
-      if (!state.data.options || state.data.options.length < 2) {
+      if (!state.data.correctAnswers || state.data.correctAnswers.length < 1) {
+        await sendTelegramMessage(
+          chatId,
+          "❌ Нужен минимум 1 правильный ответ. Введите ответ."
+        );
+        state.step = "correctAnswers";
+        return;
+      }
+      await saveQuoteQuestion(chatId, state);
+    } else if (state.type === "add_calendar") {
+      if (state.data.options.length < 2) {
         await sendTelegramMessage(
           chatId,
           "❌ Нужно минимум 2 варианта ответа. Введите еще варианты."
@@ -1123,7 +1188,7 @@ async function finalizeQuestion(
         state.step = "options";
         return;
       }
-      await saveQuoteQuestion(chatId, state);
+      await saveCalendarQuestion(chatId, state);
     }
     userStates.delete(userId);
   } catch (error) {
@@ -1451,17 +1516,32 @@ async function saveQuoteQuestion(chatId: number, state: UserState) {
     method: "POST",
     body: {
       difficulty: state.data.difficulty,
-      quote: state.data.quote,
-      question_type: state.data.questionType,
-      options: state.data.options,
-      correct_answer: state.data.correctAnswer,
-      source: state.data.source || "",
+      question: state.data.question,
+      correct_answers: state.data.correctAnswers,
     },
   });
 
   await sendTelegramMessage(
     chatId,
-    `✅ Библейская цитата успешно добавлена!`,
+    `✅ Библейская цитата успешно добавлена!\n\nВопрос: ${state.data.question}\nОтветы: ${state.data.correctAnswers.join(", ")}`,
+    getMainMenuKeyboard()
+  );
+}
+
+async function saveCalendarQuestion(chatId: number, state: UserState) {
+  await supabaseRestRequest("calendar_questions", {
+    method: "POST",
+    body: {
+      difficulty: state.data.difficulty,
+      question: state.data.question,
+      options: state.data.options,
+      correct_answer: state.data.correctAnswer,
+    },
+  });
+
+  await sendTelegramMessage(
+    chatId,
+    `✅ Вопрос для Календаря успешно добавлен!`,
     getMainMenuKeyboard()
   );
 }
@@ -1900,7 +1980,7 @@ function getMainMenuKeyboard() {
     keyboard: [
       [{ text: "👤 Угадай лицо" }, { text: "🎵 Угадай мелодию" }],
       [{ text: "🎤 Угадай голос" }, { text: "📖 Библейская цитата" }],
-      [{ text: "🖼️ Добавить иконку" }],
+      [{ text: "📅 Календарь" }, { text: "🖼️ Добавить иконку" }],
       [{ text: "📊 Статус" }, { text: "🔐 Войти" }, { text: "🚪 Выйти" }],
     ],
     resize_keyboard: true,
