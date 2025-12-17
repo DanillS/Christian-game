@@ -5,8 +5,10 @@ import { motion } from "framer-motion";
 
 interface BibleQuotesGameProps {
   question: {
-    question: string;
-    correctAnswers: string[];
+    question?: string;
+    quote?: string;
+    correctAnswers?: string[];
+    correctAnswer?: string;
   };
   onAnswer: (isCorrect: boolean) => void;
   onNext?: () => void;
@@ -34,6 +36,12 @@ export default function BibleQuotesGame({
   const [showingAnswer, setShowingAnswer] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Нормализация данных — поддержка старого и нового формата
+  const questionText = question.question || question.quote || "";
+  const correctAnswers =
+    question.correctAnswers ||
+    (question.correctAnswer ? [question.correctAnswer] : []);
+
   // Сброс состояния при смене вопроса
   useEffect(() => {
     setTextInput("");
@@ -47,7 +55,7 @@ export default function BibleQuotesGame({
 
   const checkAnswer = (answer: string): boolean => {
     const normalizedAnswer = answer.toLowerCase().trim();
-    return question.correctAnswers.some(
+    return correctAnswers.some(
       (correct) => correct.toLowerCase().trim() === normalizedAnswer
     );
   };
@@ -85,12 +93,10 @@ export default function BibleQuotesGame({
   const handleShowAnswer = () => {
     setShowingAnswer(true);
     // Циклический показ ответов
-    setRevealedAnswerIndex(
-      (prev) => (prev + 1) % question.correctAnswers.length
-    );
+    setRevealedAnswerIndex((prev) => (prev + 1) % correctAnswers.length);
   };
 
-  const currentRevealedAnswer = question.correctAnswers[revealedAnswerIndex];
+  const currentRevealedAnswer = correctAnswers[revealedAnswerIndex];
 
   return (
     <div
@@ -224,7 +230,7 @@ export default function BibleQuotesGame({
           className="rounded-lg p-3 md:p-4 mb-2 backdrop-blur-md"
         >
           <p className="text-sm md:text-base text-white text-center leading-relaxed">
-            {question.question}
+            {questionText}
           </p>
         </div>
 
@@ -326,10 +332,9 @@ export default function BibleQuotesGame({
             <p className="text-yellow-300 font-semibold">
               {currentRevealedAnswer}
             </p>
-            {question.correctAnswers.length > 1 && (
+            {correctAnswers.length > 1 && (
               <p className="text-white/50 text-xs mt-1">
-                (ответ {revealedAnswerIndex + 1} из{" "}
-                {question.correctAnswers.length})
+                (ответ {revealedAnswerIndex + 1} из {correctAnswers.length})
               </p>
             )}
           </motion.div>
