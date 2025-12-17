@@ -40,7 +40,11 @@ export default function BibleQuotesGame({
   const questionText = question.question || question.quote || "";
   const correctAnswers =
     question.correctAnswers ||
-    (question.correctAnswer ? [question.correctAnswer] : []);
+    (question.correctAnswer
+      ? question.correctAnswer.includes(" | ")
+        ? question.correctAnswer.split(" | ")
+        : [question.correctAnswer]
+      : []);
 
   // Сброс состояния при смене вопроса
   useEffect(() => {

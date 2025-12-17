@@ -1519,14 +1519,14 @@ async function saveQuoteQuestion(chatId: number, state: UserState) {
       quote: state.data.question,
       question_type: "source",
       options: state.data.correctAnswers,
-      correct_answer: state.data.correctAnswers[0],
+      correct_answer: state.data.correctAnswers.join(" | "),
       source: "",
     },
   });
 
   await sendTelegramMessage(
     chatId,
-    `✅ Библейская цитата успешно добавлена!\n\nВопрос: ${state.data.question}\nОтвет: ${state.data.correctAnswers[0]}`,
+    `✅ Библейская цитата успешно добавлена!\n\nВопрос: ${state.data.question}\nОтветы: ${state.data.correctAnswers.join(", ")}`,
     getMainMenuKeyboard()
   );
 }
