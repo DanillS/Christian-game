@@ -15,10 +15,8 @@ const TELEGRAM_SECRET_TOKEN = process.env.TELEGRAM_SECRET_TOKEN || "";
 
 const ROUND_ICON_IDS = [
   "guess-face",
-  "guess-melody",
   "bible-quotes",
   "guess-voice",
-  "calendar",
 ];
 
 interface TelegramUser {
@@ -64,10 +62,8 @@ interface TelegramUpdate {
 interface UserState {
   type:
     | "add_face"
-    | "add_melody"
     | "add_voice"
     | "add_quote"
-    | "add_calendar"
     | "add_icon"
     | "login"
     | null;
@@ -195,17 +191,6 @@ async function processUpdate(update: TelegramUpdate) {
       return;
     }
 
-    if (text === "🎵 Угадай мелодию") {
-      if (userId) {
-        const mockMessage = {
-          from: message.from,
-          chat: message.chat,
-        } as TelegramMessage;
-        await startAddMelody(mockMessage);
-      }
-      return;
-    }
-
     if (text === "🎤 Угадай голос") {
       if (userId) {
         const mockMessage = {
@@ -224,17 +209,6 @@ async function processUpdate(update: TelegramUpdate) {
           chat: message.chat,
         } as TelegramMessage;
         await startAddQuote(mockMessage);
-      }
-      return;
-    }
-
-    if (text === "📅 Календарь") {
-      if (userId) {
-        const mockMessage = {
-          from: message.from,
-          chat: message.chat,
-        } as TelegramMessage;
-        await startAddCalendar(mockMessage);
       }
       return;
     }
@@ -291,16 +265,6 @@ async function processUpdate(update: TelegramUpdate) {
           );
           return;
         }
-        if (text === "🎵 Угадай мелодию") {
-          state.step = "waiting_file";
-          state.data.roundId = "guess-melody";
-          await sendTelegramMessage(
-            chatId,
-            '🖼️ Добавление иконки для раунда "guess-melody"\n\n📸 Прикрепите изображение (PNG, JPG, JPEG):',
-            getCancelKeyboard()
-          );
-          return;
-        }
         if (text === "📖 Библейские цитаты") {
           state.step = "waiting_file";
           state.data.roundId = "bible-quotes";
@@ -317,16 +281,6 @@ async function processUpdate(update: TelegramUpdate) {
           await sendTelegramMessage(
             chatId,
             '🖼️ Добавление иконки для раунда "guess-voice"\n\n📸 Прикрепите изображение (PNG, JPG, JPEG):',
-            getCancelKeyboard()
-          );
-          return;
-        }
-        if (text === "📅 Календарь") {
-          state.step = "waiting_file";
-          state.data.roundId = "calendar";
-          await sendTelegramMessage(
-            chatId,
-            '🖼️ Добавление иконки для раунда "calendar"\n\n📸 Прикрепите изображение (PNG, JPG, JPEG):',
             getCancelKeyboard()
           );
           return;
@@ -668,24 +622,6 @@ async function startAddFace(message: TelegramMessage) {
   );
 }
 
-async function startAddMelody(message: TelegramMessage) {
-  if (!(await ensureAuthorized(message))) return;
-  const userId = message.from?.id;
-  const chatId = message.chat.id;
-  if (!userId) return;
-
-  userStates.set(userId, {
-    type: "add_melody",
-    step: "options",
-    data: { options: [], difficulty: "medium" },
-  });
-  await sendTelegramMessage(
-    chatId,
-    '🎵 Добавление вопроса "Угадай мелодию"\n\n📝 Шаг 1/3: Введите варианты ответов\n\nВведите первый вариант ответа (минимум 2 варианта):',
-    getCancelKeyboard()
-  );
-}
-
 async function startAddVoice(message: TelegramMessage) {
   if (!(await ensureAuthorized(message))) return;
   const userId = message.from?.id;
@@ -722,34 +658,12 @@ async function startAddQuote(message: TelegramMessage) {
   );
 }
 
-async function startAddCalendar(message: TelegramMessage) {
-  if (!(await ensureAuthorized(message))) return;
-  const userId = message.from?.id;
-  const chatId = message.chat.id;
-  if (!userId) return;
-
-  userStates.set(userId, {
-    type: "add_calendar",
-    step: "question",
-    data: { difficulty: "medium", options: [] },
-  });
-  await sendTelegramMessage(
-    chatId,
-    "📅 Добавление вопроса в Календарь\n\n📝 Шаг 1/4: Введите текст вопроса:",
-    getCancelKeyboard()
-  );
-}
-
 function getNextStep(type: string, currentStep: string): string {
   const flows: Record<string, Record<string, string>> = {
     add_face: {
       options: "correctAnswer",
       correctAnswer: "photo",
       photo: "fullPhoto",
-    },
-    add_melody: {
-      options: "correctAnswer",
-      correctAnswer: "audio",
     },
     add_voice: {
       options: "correctAnswer",
@@ -878,29 +792,6 @@ async function handleStateStep(message: TelegramMessage, state: UserState) {
     return;
   }
 
-  // Обработка шагов для календаря
-  if (state.step === "question" && state.type === "add_calendar") {
-    const text = (message.text || message.caption || "").trim();
-    if (text) {
-      state.data.question = text;
-      state.step = "options";
-      const keyboard = {
-        keyboard: [
-          [{ text: "✅ Готово (минимум 2 варианта)" }],
-          [{ text: "❌ Отмена" }],
-        ],
-        resize_keyboard: true,
-        one_time_keyboard: false,
-      };
-      await sendTelegramMessage(
-        chatId,
-        "📝 Шаг 2/4: Вопрос сохранен.\n\nВведите первый вариант ответа (минимум 2 варианта):",
-        keyboard
-      );
-    }
-    return;
-  }
-
   // Обработка файлов (проверяем после текстовых шагов)
   if (state.step === "photo" && state.type === "add_face") {
     const fileId = extractImageFileId(message);
@@ -960,25 +851,19 @@ async function handleStateStep(message: TelegramMessage, state: UserState) {
 
   if (
     state.step === "audio" &&
-    (state.type === "add_melody" || state.type === "add_voice")
+    state.type === "add_voice"
   ) {
     const fileInfo = extractAudioFile(message);
     if (fileInfo) {
       state.data.fileId = fileInfo.file_id;
       
       // Для "Угадай голос" переходим на шаг загрузки оригинала
-      if (state.type === "add_voice") {
-        state.step = "originalAudio";
-        await sendTelegramMessage(
-          chatId,
-          "✅ Неестественный голос сохранен!\n\n📝 Шаг 4/4: Прикрепите оригинальный аудио/видео файл (необязательно)\n\nЭтот файл будет воспроизводиться после правильного ответа.\n\n📹 Можете прикрепить видео или аудио.\n\nЕсли не хотите добавлять оригинал, нажмите кнопку 'Пропустить'.",
-          getSkipOrCancelKeyboard()
-        );
-      } else {
-        // Для "Угадай мелодию" сразу финализируем
-        await sendTelegramMessage(chatId, "⏳ Загружаю аудиофайл...");
-        await finalizeQuestion(chatId, userId, state);
-      }
+      state.step = "originalAudio";
+      await sendTelegramMessage(
+        chatId,
+        "✅ Неестественный голос сохранен!\n\n📝 Шаг 4/4: Прикрепите оригинальный аудио/видео файл (необязательно)\n\nЭтот файл будет воспроизводиться после правильного ответа.\n\n📹 Можете прикрепить видео или аудио.\n\nЕсли не хотите добавлять оригинал, нажмите кнопку 'Пропустить'.",
+        getSkipOrCancelKeyboard()
+      );
     } else {
       // Если файл не найден, но есть текст - это может быть ошибка
       const text = (message.text || message.caption || "").trim();
@@ -1074,7 +959,7 @@ async function processStateStep(
       stepNumber = "4/5";
     } else if (state.type === "add_face") {
       stepNumber = "2/4";
-    } else if (state.type === "add_melody" || state.type === "add_voice") {
+    } else if (state.type === "add_voice") {
       stepNumber = "2/3";
     }
     await sendTelegramMessage(
@@ -1095,16 +980,9 @@ async function processStateStep(
       getCancelKeyboard()
     );
   } else if (state.step === "audio") {
-    let stepNumber = "3/3";
-    const questionType = state.type === "add_melody" ? "мелодию" : "голос";
-    
-    if (state.type === "add_voice") {
-      stepNumber = "3/4";
-    }
-    
     await sendTelegramMessage(
       chatId,
-      `📝 Шаг ${stepNumber}: Прикрепите аудиофайл (MP3 или OGA) с ${questionType === "голос" ? "неестественным голосом" : questionType}:`,
+      `📝 Шаг 3/4: Прикрепите аудиофайл (MP3 или OGA) с неестественным голосом:`,
       getCancelKeyboard()
     );
   } else if (state.step === "originalAudio" && state.type === "add_voice") {
@@ -1149,16 +1027,6 @@ async function finalizeQuestion(
         return;
       }
       await saveFaceQuestion(chatId, state);
-    } else if (state.type === "add_melody") {
-      if (state.data.options.length < 2) {
-        await sendTelegramMessage(
-          chatId,
-          "❌ Нужно минимум 2 варианта ответа. Введите еще варианты."
-        );
-        state.step = "options";
-        return;
-      }
-      await saveMelodyQuestion(chatId, state);
     } else if (state.type === "add_voice") {
       if (state.data.options.length < 2) {
         await sendTelegramMessage(
@@ -1179,16 +1047,6 @@ async function finalizeQuestion(
         return;
       }
       await saveQuoteQuestion(chatId, state);
-    } else if (state.type === "add_calendar") {
-      if (state.data.options.length < 2) {
-        await sendTelegramMessage(
-          chatId,
-          "❌ Нужно минимум 2 варианта ответа. Введите еще варианты."
-        );
-        state.step = "options";
-        return;
-      }
-      await saveCalendarQuestion(chatId, state);
     }
     userStates.delete(userId);
   } catch (error) {
@@ -1307,65 +1165,6 @@ async function saveFaceQuestion(chatId: number, state: UserState) {
   await sendTelegramMessage(
     chatId,
     `✅ Вопрос "Угадай лицо" успешно добавлен!\n\n📸 Часть тела: ${publicUrl}\n📸 Полная фотография: ${fullImageUrl}`,
-    getMainMenuKeyboard()
-  );
-}
-
-async function saveMelodyQuestion(chatId: number, state: UserState) {
-  const file = await downloadTelegramFile(state.data.fileId);
-  const timestamp = Date.now();
-  // Определяем расширение из имени файла или MIME типа
-  let extension = file.extension?.toLowerCase();
-  let mimeType = file.mimeType || "application/octet-stream";
-
-  // Нормализуем расширения OGG в OGA
-  if (extension === "oga" || extension === "ogg") {
-    extension = "oga";
-    if (!mimeType.includes("ogg")) {
-      mimeType = "audio/ogg";
-    }
-  }
-
-  if (!extension) {
-    // Если расширение не определено, пытаемся определить по MIME типу
-    const mimeLower = mimeType.toLowerCase();
-    if (
-      mimeLower.includes("ogg") ||
-      mimeLower.includes("vorbis") ||
-      mimeLower.includes("opus")
-    ) {
-      extension = "oga";
-      mimeType = "audio/ogg";
-    } else {
-      extension = "mp3"; // По умолчанию MP3
-      mimeType = "audio/mpeg";
-    }
-  }
-
-  const objectPath = `audio/melodies/${state.data.difficulty}/${timestamp}.${extension}`;
-
-  const publicUrl = await supabaseStorageUpload(
-    objectPath,
-    file.buffer,
-    mimeType,
-    {
-      upsert: false,
-    }
-  );
-
-  await supabaseRestRequest("guess_melody_questions", {
-    method: "POST",
-    body: {
-      difficulty: state.data.difficulty,
-      audio_url: publicUrl,
-      options: state.data.options,
-      correct_answer: state.data.correctAnswer,
-    },
-  });
-
-  await sendTelegramMessage(
-    chatId,
-    `✅ Вопрос "Угадай мелодию" успешно добавлен!\n\n🎵 Аудио: ${publicUrl}`,
     getMainMenuKeyboard()
   );
 }
@@ -1527,24 +1326,6 @@ async function saveQuoteQuestion(chatId: number, state: UserState) {
   await sendTelegramMessage(
     chatId,
     `✅ Библейская цитата успешно добавлена!\n\nВопрос: ${state.data.question}\nОтветы: ${state.data.correctAnswers.join(", ")}`,
-    getMainMenuKeyboard()
-  );
-}
-
-async function saveCalendarQuestion(chatId: number, state: UserState) {
-  await supabaseRestRequest("calendar_questions", {
-    method: "POST",
-    body: {
-      difficulty: state.data.difficulty,
-      question: state.data.question,
-      options: state.data.options,
-      correct_answer: state.data.correctAnswer,
-    },
-  });
-
-  await sendTelegramMessage(
-    chatId,
-    `✅ Вопрос для Календаря успешно добавлен!`,
     getMainMenuKeyboard()
   );
 }
@@ -1981,9 +1762,8 @@ async function answerCallbackQuery(
 function getMainMenuKeyboard() {
   return {
     keyboard: [
-      [{ text: "👤 Угадай лицо" }, { text: "🎵 Угадай мелодию" }],
-      [{ text: "🎤 Угадай голос" }, { text: "📖 Библейская цитата" }],
-      [{ text: "📅 Календарь" }, { text: "🖼️ Добавить иконку" }],
+      [{ text: "👤 Угадай лицо" }, { text: "🎤 Угадай голос" }],
+      [{ text: "📖 Библейская цитата" }, { text: "🖼️ Добавить иконку" }],
       [{ text: "📊 Статус" }, { text: "🔐 Войти" }, { text: "🚪 Выйти" }],
     ],
     resize_keyboard: true,
@@ -2007,9 +1787,8 @@ function getQuestionTypeKeyboard(callbackPrefix: string) {
 function getRoundIconKeyboard() {
   return {
     keyboard: [
-      [{ text: "👤 Угадай лицо" }, { text: "🎵 Угадай мелодию" }],
-      [{ text: "📖 Библейские цитаты" }, { text: "🎤 Угадай голос" }],
-      [{ text: "📅 Календарь" }, { text: "❌ Отмена" }],
+      [{ text: "👤 Угадай лицо" }, { text: "🎤 Угадай голос" }],
+      [{ text: "📖 Библейские цитаты" }, { text: "❌ Отмена" }],
     ],
     resize_keyboard: true,
     one_time_keyboard: false,
@@ -2019,9 +1798,8 @@ function getRoundIconKeyboard() {
 function getAddQuestionTypeKeyboard() {
   return {
     keyboard: [
-      [{ text: "👤 Угадай лицо" }, { text: "🎵 Угадай мелодию" }],
-      [{ text: "🎤 Угадай голос" }, { text: "📖 Библейская цитата" }],
-      [{ text: "❌ Отмена" }],
+      [{ text: "👤 Угадай лицо" }, { text: "🎤 Угадай голос" }],
+      [{ text: "📖 Библейская цитата" }, { text: "❌ Отмена" }],
     ],
     resize_keyboard: true,
     one_time_keyboard: false,

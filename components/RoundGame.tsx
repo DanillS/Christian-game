@@ -3,10 +3,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import GuessFaceGame from "./games/GuessFaceGame";
-import GuessMelodyGame from "./games/GuessMelodyGame";
 import BibleQuotesGame from "./games/BibleQuotesGame";
 import GuessVoiceGame from "./games/GuessVoiceGame";
-import CalendarGame from "./games/CalendarGame";
 import { getRoundData } from "@/data/roundData";
 
 interface RoundGameProps {
@@ -255,18 +253,6 @@ export default function RoundGame({
             onBack={onBackHandler}
           />
         );
-      case "guess-melody":
-        return (
-          <GuessMelodyGame
-            question={currentQuestion}
-            onAnswer={(isCorrect) => handleAnswer("", isCorrect)}
-            onNext={handleNext}
-            onPrevious={handlePrevious}
-            canGoNext={showArrows}
-            canGoPrevious={showArrows}
-            onBack={onBackHandler}
-          />
-        );
       case "bible-quotes":
         return (
           <BibleQuotesGame
@@ -288,14 +274,6 @@ export default function RoundGame({
             onPrevious={handlePrevious}
             canGoNext={showArrows}
             canGoPrevious={showArrows}
-            onBack={onBackHandler}
-          />
-        );
-      case "calendar":
-        return (
-          <CalendarGame
-            question={currentQuestion}
-            onAnswer={(isCorrect) => handleAnswer("", isCorrect)}
             onBack={onBackHandler}
           />
         );

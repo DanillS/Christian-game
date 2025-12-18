@@ -114,7 +114,7 @@ export default function Home() {
             <SystemStatusBar />
 
             {/* Контент */}
-            <div className="flex-1 flex items-center justify-center overflow-hidden pt-8 md:pt-10 pb-10 md:pb-12">
+            <div className="flex-1 flex items-center justify-center overflow-visible pt-8 md:pt-10 pb-10 md:pb-12">
               <RoundSelector />
             </div>
 

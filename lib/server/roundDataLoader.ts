@@ -1,23 +1,18 @@
 import { bibleQuotesData } from '@/data/bibleQuotesData'
-import { calendarData } from '@/data/calendarData'
 import { guessFaceData } from '@/data/guessFaceData'
-import { guessMelodyData } from '@/data/guessMelodyData'
 import { guessVoiceData } from '@/data/guessVoiceData'
 import { isSupabaseEnabled, supabaseRestRequest } from './supabaseClient'
 
-type RoundId = 'guess-face' | 'guess-melody' | 'bible-quotes' | 'guess-voice' | 'calendar'
+type RoundId = 'guess-face' | 'bible-quotes' | 'guess-voice'
 
 const fallbackMap: Record<RoundId, any[]> = {
   'guess-face': guessFaceData,
-  'guess-melody': guessMelodyData,
   'bible-quotes': bibleQuotesData,
   'guess-voice': guessVoiceData,
-  calendar: calendarData,
 }
 
 const tableMap: Partial<Record<RoundId, string>> = {
   'guess-face': 'guess_face_questions',
-  'guess-melody': 'guess_melody_questions',
   'bible-quotes': 'bible_quote_questions',
   'guess-voice': 'guess_voice_questions',
 }
@@ -56,12 +51,6 @@ function mapRow(roundId: RoundId, row: any) {
         image: row.image_url,
         fullImage: row.full_image_url || row.image_url, // Если нет full_image_url, используем image_url
         parts: row.parts || ['nose', 'eyes', 'mouth', 'hands', 'full'],
-        options: row.options || [],
-        correctAnswer: row.correct_answer,
-      }
-    case 'guess-melody':
-      return {
-        audioUrl: row.audio_url,
         options: row.options || [],
         correctAnswer: row.correct_answer,
       }

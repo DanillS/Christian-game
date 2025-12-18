@@ -14,13 +14,6 @@ const rounds = [
     emoji: "👤",
   },
   {
-    id: "guess-melody",
-    name: "Угадай Мелодию",
-    description: "Узнай христианские гимны",
-    icon: "/icons/guess-melody",
-    emoji: "🎵",
-  },
-  {
     id: "bible-quotes",
     name: "Библейские Цитаты",
     description: "Продолжи цитату",
@@ -33,13 +26,6 @@ const rounds = [
     description: "Узнай голос",
     icon: "/icons/guess-voice",
     emoji: "🎤",
-  },
-  {
-    id: "calendar",
-    name: "Календарь",
-    description: "Угадай дату или день рождения",
-    icon: "/icons/calendar",
-    emoji: "📅",
   },
 ];
 
@@ -230,7 +216,7 @@ export default function RoundSelector() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="grid grid-cols-2 md:grid-cols-3 w-full max-w-4xl flex-1 overflow-y-auto min-h-0 px-2 md:px-4 py-2 gap-4"
+        className="grid grid-cols-2 md:grid-cols-3 w-full max-w-4xl flex-1 overflow-y-auto overflow-x-visible min-h-0 px-2 md:px-4 py-4 md:py-6 gap-4"
       >
         {rounds.map((round) => (
           <motion.div
@@ -242,7 +228,7 @@ export default function RoundSelector() {
               transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
             }}
             whileTap={{ scale: 0.95 }}
-            className="cursor-pointer relative flex flex-col items-center justify-start w-full hover:z-10"
+            className="cursor-pointer relative flex flex-col items-center justify-start w-full z-10 hover:z-20"
             style={{ 
               willChange: "transform"
             }}

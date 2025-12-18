@@ -15,10 +15,8 @@ const difficulties = [
 
 const roundNames: Record<string, string> = {
   "guess-face": "Угадай Лицо",
-  "guess-melody": "Угадай Мелодию",
   "bible-quotes": "Библейские Цитаты",
   "guess-voice": "Угадай, Кто Говорит",
-  calendar: "Календарь",
 };
 
 interface DifficultySelectorProps {
@@ -59,7 +57,7 @@ export default function DifficultySelector({
   };
 
   return (
-    <div className="h-full w-full flex flex-col items-center justify-center px-2 md:px-4 overflow-hidden">
+    <div className="h-full w-full flex flex-col items-center justify-center px-2 md:px-4 overflow-visible">
       <motion.button
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
@@ -123,7 +121,7 @@ export default function DifficultySelector({
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 max-w-3xl w-full flex-1"
+        className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 max-w-3xl w-full flex-1 py-4 md:py-6"
       >
         {difficulties.map((difficulty) => (
           <motion.div
@@ -136,7 +134,7 @@ export default function DifficultySelector({
             }}
             whileTap={{ scale: 0.95 }}
             onClick={() => onSelect(difficulty.id)}
-            className="cursor-pointer relative"
+            className="cursor-pointer relative z-10 hover:z-20"
             style={{ willChange: "transform" }}
           >
             <div
