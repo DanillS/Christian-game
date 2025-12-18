@@ -16,7 +16,8 @@ export default function ParallaxBackground() {
 
   useEffect(() => {
     // Добавляем обработчик только на десктопе/планшете
-    if (window.innerWidth >= 768) {
+    // Проверяем наличие window для SSR
+    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
       window.addEventListener('mousemove', handleMouseMove, { passive: true })
       return () => {
         window.removeEventListener('mousemove', handleMouseMove)
