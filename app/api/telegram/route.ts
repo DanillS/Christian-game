@@ -384,8 +384,6 @@ async function processUpdate(update: TelegramUpdate) {
         } as TelegramMessage;
         if (type === "face") {
           await startAddFace(mockMessage);
-        } else if (type === "melody") {
-          await startAddMelody(mockMessage);
         } else if (type === "voice") {
           await startAddVoice(mockMessage);
         } else if (type === "quote") {
@@ -517,16 +515,10 @@ async function handleCallbackQuery(callbackQuery: TelegramCallbackQuery) {
   if (data.startsWith("add_")) {
     const type = data.replace("add_", "") as
       | "face"
-      | "melody"
       | "voice"
       | "quote";
     if (type === "face")
       await startAddFace({
-        from: callbackQuery.from,
-        chat: { id: chatId },
-      } as TelegramMessage);
-    else if (type === "melody")
-      await startAddMelody({
         from: callbackQuery.from,
         chat: { id: chatId },
       } as TelegramMessage);
