@@ -7,6 +7,7 @@ import SnowAnimation from "@/components/SnowAnimation";
 import StarsBackground from "@/components/StarsBackground";
 import SystemStatusBar from "@/components/SystemStatusBar";
 import HomeIndicator from "@/components/HomeIndicator";
+import GarlandLights from "@/components/GarlandLights";
 
 const PASSWORD = "1996"; // Пароль можно изменить здесь
 
@@ -152,6 +153,7 @@ export default function LoginPage() {
               "0 20px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
           }}
         >
+          <GarlandLights />
           {/* Screen */}
           <div
             className="rounded-[1.5rem] md:rounded-[2rem] lg:rounded-[2.5rem] overflow-hidden relative flex flex-col flex-1"

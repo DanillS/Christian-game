@@ -8,6 +8,9 @@ import SnowAnimation from "@/components/SnowAnimation";
 import StarsBackground from "@/components/StarsBackground";
 import SystemStatusBar from "@/components/SystemStatusBar";
 import HomeIndicator from "@/components/HomeIndicator";
+import GarlandLights from "@/components/GarlandLights";
+import FrostEffect from "@/components/FrostEffect";
+import ParallaxBackground from "@/components/ParallaxBackground";
 
 export default function Home() {
   const router = useRouter();
@@ -82,8 +85,10 @@ export default function Home() {
 
   return (
     <div className="h-screen w-screen bg-gradient-to-b from-blue-900 via-blue-800 to-green-900 relative overflow-hidden flex items-center justify-center p-2 md:p-4">
+      <ParallaxBackground />
       <StarsBackground />
       <SnowAnimation />
+      <FrostEffect />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
@@ -101,6 +106,7 @@ export default function Home() {
               "0 20px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
           }}
         >
+          <GarlandLights />
           {/* Screen с градиентом */}
           <div
             className="rounded-[1.5rem] md:rounded-[2rem] lg:rounded-[2.5rem] overflow-hidden relative flex flex-col flex-1"

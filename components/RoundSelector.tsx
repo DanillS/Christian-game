@@ -186,6 +186,38 @@ export default function RoundSelector() {
     },
   };
 
+  // Обработчик клика с эффектом волны
+  const handleCardClick = (roundId: string, event: React.MouseEvent<HTMLDivElement>) => {
+    const card = event.currentTarget
+    const ripple = document.createElement('div')
+    const rect = card.getBoundingClientRect()
+    const size = Math.max(rect.width, rect.height)
+    const x = event.clientX - rect.left - size / 2
+    const y = event.clientY - rect.top - size / 2
+    
+    ripple.style.cssText = `
+      position: absolute;
+      width: ${size}px;
+      height: ${size}px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 215, 0, 0.4) 0%, transparent 70%);
+      left: ${x}px;
+      top: ${y}px;
+      pointer-events: none;
+      animation: ripple 0.6s ease-out;
+      will-change: transform, opacity;
+      z-index: 1;
+    `
+    
+    card.style.position = 'relative'
+    card.appendChild(ripple)
+    
+    setTimeout(() => {
+      ripple.remove()
+      router.push(`/round/${roundId}`)
+    }, 300)
+  };
+
   return (
     <div className="h-full w-full flex flex-col items-center justify-center px-2 md:px-4 relative z-10 overflow-visible">
       <motion.div
@@ -198,14 +230,14 @@ export default function RoundSelector() {
         className="text-center mb-2 md:mb-3 flex-shrink-0"
         style={{ marginBottom: '40px' }}
       >
-        <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-white mb-1 drop-shadow-2xl">
+        <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-white mb-1 drop-shadow-2xl pulse-glow">
           Рождественские Тайны
         </h1>
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.5 }}
-          className="text-white/80 text-xs md:text-sm"
+          className="text-white/80 text-xs md:text-sm fade-in-out"
         >
           Выберите игру
         </motion.p>
@@ -228,24 +260,23 @@ export default function RoundSelector() {
               transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
             }}
             whileTap={{ scale: 0.95 }}
-            className="cursor-pointer relative flex flex-col items-center justify-start w-full z-10 hover:z-20"
+            className="cursor-pointer relative flex flex-col items-center justify-start w-full z-10 hover:z-20 float-animation"
             style={{ 
               willChange: "transform"
             }}
-            onClick={() => router.push(`/round/${round.id}`)}
+            onClick={(e) => handleCardClick(round.id, e)}
           >
             {/* App icon container - круглый */}
             <div
-              className="rounded-full flex items-center justify-center relative overflow-hidden mb-2 flex-shrink-0"
+              className="rounded-full flex items-center justify-center relative overflow-hidden mb-2 flex-shrink-0 golden-glow deep-shadow"
               style={{
                 background: "rgba(255, 255, 255, 0.15)",
                 backdropFilter: "blur(20px)",
                 WebkitBackdropFilter: "blur(20px)",
                 border: "2px solid rgba(255, 255, 255, 0.3)",
-                boxShadow:
-                  "0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)",
                 height: '96px',
-                width: '96px'
+                width: '96px',
+                transition: 'box-shadow 0.3s ease',
               }}
             >
               {imageErrors[round.id] ? (
