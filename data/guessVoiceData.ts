@@ -8,13 +8,18 @@
 // - Видео: file1.mp3 (неестественный) и file1_original.mp4 (оригинальное видео)
 //
 // Поддерживаемые форматы видео: .mp4, .webm, .mov, .avi
+//
+// Поддерживаются несколько форматов для правильных ответов:
+// 1. correctAnswers: ["Даша", "Дашенька"] - массив (рекомендуется)
+// 2. correctAnswer: "Даша | Дашенька" - строка через " | "
+// 3. correctAnswer: "Даша" - одна строка
 
 export const guessVoiceData: any[] = [
   {
     audioUrl: "/audio/voices/file1.mp3",
     originalAudioUrl: "/audio/voices/file1_original.mp4", // Добавьте оригинальный файл
     options: ["Таня", "Даша", "Юля", "Витя"],
-    correctAnswer: "Даша",
+    correctAnswer: "Даша", // Или используйте correctAnswers: ["Даша", "Дашенька"]
   },
   {
     audioUrl: "/audio/voices/file3.mp3",
@@ -32,13 +37,13 @@ export const guessVoiceData: any[] = [
     audioUrl: "/audio/voices/file5.mp3",
     originalAudioUrl: "/audio/voices/file5_original.mp3", // Добавьте оригинальный файл
     options: ["Витя", "Данил Я", "Тима", "Аня", "Филипп"],
-    correctAnswer: "Тима",
+    correctAnswer: ["Тима", 'Тимоха'],
   },
   {
     audioUrl: "/audio/voices/file6.mp3",
     originalAudioUrl: "/audio/voices/file6_original.mp4", // Добавьте оригинальный файл
     options: ["Иван", "Мария", "Петя", "Маша", "Лиза Б", "Витя"],
-    correctAnswer: "Витя",
+    correctAnswer: ["Витя", 'БадиВитька'],
   },
   {
     audioUrl: "/audio/voices/file7.mp3",
@@ -49,7 +54,26 @@ export const guessVoiceData: any[] = [
   {
     audioUrl: "/audio/voices/file8.mp3",
     originalAudioUrl: "/audio/voices/file8_original.mp3", // Добавьте оригинальный файл
-    options: ["Витя", "Маша", "Данил Я", "Даша", "Лиза Б", "Тима", "Тима", "Тима", "Тима", "Тима", "Тима", "Тима", "Тима", "Тима", "Тима", "Тима", "Тима", "Тима"],
+    options: [
+      "Витя",
+      "Маша",
+      "Данил Я",
+      "Даша",
+      "Лиза Б",
+      "Тима",
+      "Тима",
+      "Тима",
+      "Тима",
+      "Тима",
+      "Тима",
+      "Тима",
+      "Тима",
+      "Тима",
+      "Тима",
+      "Тима",
+      "Тима",
+      "Тима",
+    ],
     correctAnswer: "Маша",
   },
   {

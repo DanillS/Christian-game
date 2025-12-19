@@ -1,13 +1,18 @@
 // Файл для добавления вопросов раунда "Угадай Лицо"
 // Добавьте свои вопросы в массив
+//
+// Поддерживаются несколько форматов для правильных ответов:
+// 1. correctAnswers: ["Иван", "Ваня"] - массив (рекомендуется)
+// 2. correctAnswer: "Иван | Ваня" - строка через " | "
+// 3. correctAnswer: "Иван" - одна строка
 
 export const guessFaceData: any[] = [
   {
     image: "/images/faces/file4.png", // Фотография части тела
     fullImage: "/images/faces/file1.png", // Полная фотография (откуда брали часть)
     parts: ["nose", "eyes", "mouth", "hands", "full"],
-    options: ["Петя", "Илья", "Филипп", "Полина", ],
-    correctAnswer: "Филипп",
+    options: ["Петя", "Илья", "Филипп", "Полина"],
+    correctAnswer: "Филипп", // Или используйте correctAnswers: ["Филипп", "Филя"]
   },
   {
     image: "/images/faces/file19.png", // Фотография части тела
@@ -21,7 +26,7 @@ export const guessFaceData: any[] = [
     fullImage: "/images/faces/file8.png", // Полная фотография (откуда брали часть)
     parts: ["nose", "eyes", "mouth", "hands", "full"],
     options: ["Елизавета", "Ниса", "Таня", "София"],
-    correctAnswer: "Елизавета",
+    correctAnswer: ["Елизавета", 'Лиза'],
   },
   {
     image: "/images/faces/file18.png", // Фотография части тела
@@ -56,14 +61,14 @@ export const guessFaceData: any[] = [
     fullImage: "/images/faces/file5.png", // Полная фотография (откуда брали часть)
     parts: ["nose", "eyes", "mouth", "hands", "full"],
     options: ["Дарья", "Лиза", "Таня", "Руфа", "Полина"],
-    correctAnswer: "Таня",
+    correctAnswer: ["Таня", 'Танька'],
   },
   {
     image: "/images/faces/file9.png", // Фотография части тела
     fullImage: "/images/faces/file2.png", // Полная фотография (откуда брали часть)
     parts: ["nose", "eyes", "mouth", "hands", "full"],
     options: ["Дарья", "Полина", "Таня", "Руфа"],
-    correctAnswer: "Дарья",
+    correctAnswer: "Дарья | Даша",
   },
   {
     image: "/images/faces/file15.png", // Фотография части тела

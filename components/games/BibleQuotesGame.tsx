@@ -15,6 +15,8 @@ interface BibleQuotesGameProps {
   onPrevious?: () => void;
   canGoNext?: boolean;
   canGoPrevious?: boolean;
+  savedAnswer?: string | null;
+  savedWrongAnswers?: string[];
   onBack?: () => void;
 }
 
@@ -25,6 +27,8 @@ export default function BibleQuotesGame({
   onPrevious,
   canGoNext = false,
   canGoPrevious = false,
+  savedAnswer = null,
+  savedWrongAnswers = [],
   onBack,
 }: BibleQuotesGameProps) {
   const [textInput, setTextInput] = useState("");
@@ -48,19 +52,41 @@ export default function BibleQuotesGame({
 
   // Сброс состояния при смене вопроса
   useEffect(() => {
-    setTextInput("");
-    setAttempts(0);
+    // Если есть сохраненный правильный ответ - восстанавливаем состояние
+    if (savedAnswer && savedAnswer !== "✓" && typeof savedAnswer === 'string' && savedAnswer.trim() !== "") {
+      setIsCorrect(true);
+      setTextInput("");
+      // Находим индекс правильного ответа в массиве correctAnswers
+      const answerIndex = correctAnswers.findIndex(
+        (ans: string) => ans.toLowerCase().trim() === savedAnswer.toLowerCase().trim()
+      );
+      if (answerIndex !== -1) {
+        setRevealedAnswerIndex(answerIndex);
+      } else {
+        setRevealedAnswerIndex(0);
+      }
+      setShowingAnswer(true);
+    } else if (savedAnswer === "✓") {
+      setIsCorrect(true);
+      setTextInput("");
+      setRevealedAnswerIndex(0);
+      setShowingAnswer(true);
+    } else {
+      // Для новых вопросов сбрасываем все состояние
+      setTextInput("");
+      setIsCorrect(false);
+      setRevealedAnswerIndex(0);
+      setShowingAnswer(false);
+    }
+    setAttempts(savedWrongAnswers?.length || 0);
     setShowResult(false);
-    setIsCorrect(false);
-    setShowAnswerButton(false);
-    setRevealedAnswerIndex(0);
-    setShowingAnswer(false);
+    setShowAnswerButton(savedWrongAnswers && savedWrongAnswers.length >= 3);
   }, [question]);
 
   const checkAnswer = (answer: string): boolean => {
     const normalizedAnswer = answer.toLowerCase().trim();
     return correctAnswers.some(
-      (correct) => correct.toLowerCase().trim() === normalizedAnswer
+      (correct: string) => correct.toLowerCase().trim() === normalizedAnswer
     );
   };
 
@@ -95,9 +121,19 @@ export default function BibleQuotesGame({
   };
 
   const handleShowAnswer = () => {
+    setIsCorrect(true);
     setShowingAnswer(true);
     // Циклический показ ответов
-    setRevealedAnswerIndex((prev) => (prev + 1) % correctAnswers.length);
+    // При первом нажатии показываем первый ответ (индекс 0), при последующих - следующий
+    setRevealedAnswerIndex((prev) => {
+      // Если это первый показ (prev === 0 и showingAnswer еще false), оставляем 0
+      if (prev === 0 && !showingAnswer) {
+        return 0;
+      }
+      // Иначе переходим к следующему ответу циклически
+      return (prev + 1) % correctAnswers.length;
+    });
+    onAnswer(true);
   };
 
   const currentRevealedAnswer = correctAnswers[revealedAnswerIndex];
@@ -264,8 +300,13 @@ export default function BibleQuotesGame({
                   ? "rgba(34, 197, 94, 0.2)"
                   : "rgba(239, 68, 68, 0.2)"
                 : "rgba(255, 255, 255, 0.1)",
+              scale: showResult ? (isCorrect ? [1, 1.02, 1] : [1, 0.98, 1]) : 1,
+              x: showResult && !isCorrect ? [0, -5, 5, -5, 5, 0] : 0,
             }}
-            transition={{ duration: 0.3 }}
+            transition={{
+              duration: showResult ? (isCorrect ? 0.5 : 0.4) : 0.3,
+              ease: isCorrect ? "easeOut" : "easeInOut",
+            }}
             className="relative"
           >
             <input
@@ -294,20 +335,60 @@ export default function BibleQuotesGame({
             disabled={isCorrect || showingAnswer}
             whileHover={isCorrect || showingAnswer ? {} : { scale: 1.02 }}
             whileTap={{ scale: isCorrect || showingAnswer ? 1 : 0.98 }}
-            className="w-full py-3 rounded-xl text-white font-medium transition-all disabled:opacity-50 relative z-10"
+            animate={{
+              scale: showResult
+                ? isCorrect
+                  ? [1, 1.1, 1.05, 1]
+                  : [1, 0.95, 1.02, 1]
+                : 1,
+              boxShadow: showResult
+                ? isCorrect
+                  ? [
+                      "0 2px 8px rgba(0, 0, 0, 0.15)",
+                      "0 4px 20px rgba(34, 197, 94, 0.4)",
+                      "0 2px 8px rgba(0, 0, 0, 0.15)",
+                    ]
+                  : [
+                      "0 2px 8px rgba(0, 0, 0, 0.15)",
+                      "0 4px 20px rgba(239, 68, 68, 0.4)",
+                      "0 2px 8px rgba(0, 0, 0, 0.15)",
+                    ]
+                : "0 2px 8px rgba(0, 0, 0, 0.15)",
+            }}
+            transition={{
+              duration: showResult ? (isCorrect ? 0.6 : 0.5) : 0.2,
+              ease: isCorrect ? [0.16, 1, 0.3, 1] : "easeInOut",
+            }}
+            className="w-full py-3 rounded-xl font-medium transition-all disabled:opacity-50 relative z-10"
             style={{
-              background: "rgba(255, 255, 255, 0.15)",
-              border: "2px solid rgba(255, 255, 255, 0.5)",
-              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+              background: showResult
+                ? isCorrect
+                  ? "rgba(34, 197, 94, 0.3)"
+                  : "rgba(239, 68, 68, 0.3)"
+                : "rgba(255, 255, 255, 0.15)",
+              border: showResult
+                ? isCorrect
+                  ? "2px solid rgba(34, 197, 94, 0.8)"
+                  : "2px solid rgba(239, 68, 68, 0.8)"
+                : "2px solid rgba(255, 255, 255, 0.5)",
               backdropFilter: "blur(10px)",
+              color: showResult
+                ? isCorrect
+                  ? "rgba(34, 197, 94, 1)"
+                  : "rgba(239, 68, 68, 1)"
+                : "white",
             }}
           >
-            Проверить
+            {showResult
+              ? isCorrect
+                ? "✓ Правильно!"
+                : "✗ Неправильно"
+              : "Проверить"}
           </motion.button>
         </form>
 
         {/* Кнопка показать ответ */}
-        {showAnswerButton && !isCorrect && (
+        {((showAnswerButton && !isCorrect) || (isCorrect && correctAnswers.length > 1) || showingAnswer) && (
           <motion.button
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -322,7 +403,7 @@ export default function BibleQuotesGame({
               backdropFilter: "blur(10px)",
             }}
           >
-            {showingAnswer ? "Показать другой ответ" : "Показать ответ"}
+            {showingAnswer && correctAnswers.length > 1 ? "Показать другой ответ" : "Показать ответ"}
           </motion.button>
         )}
 
@@ -351,22 +432,6 @@ export default function BibleQuotesGame({
         <div className="h-3 md:h-4"></div>
       </div>
 
-      {/* Результат */}
-      {showResult && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-2 md:mt-3 text-center flex-shrink-0"
-        >
-          <p
-            className={`text-base md:text-lg font-bold ${
-              isCorrect ? "text-green-400" : "text-red-400"
-            }`}
-          >
-            {isCorrect ? "✓ Правильно!" : "✗ Неправильно"}
-          </p>
-        </motion.div>
-      )}
     </div>
   );
 }

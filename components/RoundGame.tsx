@@ -88,6 +88,38 @@ export default function RoundGame({
     }
   }, [roundId]);
 
+  // Загружаем сохраненные результаты при инициализации
+  useEffect(() => {
+    const savedAnswers = localStorage.getItem(`answers-${roundId}`);
+    const savedWrongAnswers = localStorage.getItem(`wrongAnswers-${roundId}`);
+
+    if (savedAnswers) {
+      try {
+        const answersData = JSON.parse(savedAnswers);
+        const answersMap = new Map<number, string>();
+        Object.entries(answersData).forEach(([key, value]) => {
+          answersMap.set(Number(key), value as string);
+        });
+        setAnswers(answersMap);
+      } catch (e) {
+        console.error("Ошибка загрузки сохраненных ответов:", e);
+      }
+    }
+
+    if (savedWrongAnswers) {
+      try {
+        const wrongAnswersData = JSON.parse(savedWrongAnswers);
+        const wrongAnswersMap = new Map<number, string[]>();
+        Object.entries(wrongAnswersData).forEach(([key, value]) => {
+          wrongAnswersMap.set(Number(key), value as string[]);
+        });
+        setWrongAnswers(wrongAnswersMap);
+      } catch (e) {
+        console.error("Ошибка загрузки сохраненных неправильных ответов:", e);
+      }
+    }
+  }, [roundId]);
+
   useEffect(() => {
     setCurrentIndex(initialQuestionIndex);
   }, [initialQuestionIndex]);
@@ -110,7 +142,10 @@ export default function RoundGame({
       // Сохраняем правильный ответ
       setAnswers((prev) => {
         const newAnswers = new Map(prev);
-        newAnswers.set(originalIndex, answer);
+        newAnswers.set(originalIndex, answer || "✓"); // Используем "✓" если answer пустой
+        // Сохраняем в localStorage синхронно
+        const answersObj = Object.fromEntries(newAnswers);
+        localStorage.setItem(`answers-${roundId}`, JSON.stringify(answersObj));
         return newAnswers;
       });
 
@@ -135,6 +170,12 @@ export default function RoundGame({
         if (!currentWrong.includes(answer)) {
           newWrongAnswers.set(originalIndex, [...currentWrong, answer]);
         }
+        // Сохраняем в localStorage синхронно
+        const wrongAnswersObj = Object.fromEntries(newWrongAnswers);
+        localStorage.setItem(
+          `wrongAnswers-${roundId}`,
+          JSON.stringify(wrongAnswersObj)
+        );
         return newWrongAnswers;
       });
     }
@@ -262,6 +303,8 @@ export default function RoundGame({
             onPrevious={handlePrevious}
             canGoNext={showArrows}
             canGoPrevious={showArrows}
+            savedAnswer={savedAnswer}
+            savedWrongAnswers={savedWrongAnswers}
             onBack={onBackHandler}
           />
         );
@@ -274,6 +317,8 @@ export default function RoundGame({
             onPrevious={handlePrevious}
             canGoNext={showArrows}
             canGoPrevious={showArrows}
+            savedAnswer={savedAnswer}
+            savedWrongAnswers={savedWrongAnswers}
             onBack={onBackHandler}
           />
         );

@@ -35,7 +35,49 @@ export default function RoundPage() {
     );
   };
 
-  const handleBack = () => {
+  const handleBack = async () => {
+    // Проверяем, все ли вопросы пройдены
+    const savedAnswers = localStorage.getItem(`answers-${roundId}`);
+    if (savedAnswers) {
+      try {
+        const answersData = JSON.parse(savedAnswers);
+        const answeredIndices = Object.keys(answersData).map(Number);
+        
+        // Загружаем вопросы для проверки
+        try {
+          const cacheBuster = `?t=${Date.now()}`;
+          const response = await fetch(
+            `/api/round-data/${roundId}${cacheBuster}`,
+            { cache: "no-store" }
+          );
+          if (response.ok) {
+            const payload = await response.json();
+            const apiQuestions = Array.isArray(payload.questions)
+              ? payload.questions
+              : [];
+            
+            // Если все вопросы имеют правильные ответы - очищаем результаты
+            if (apiQuestions.length > 0 && answeredIndices.length >= apiQuestions.length) {
+              // Проверяем, что все индексы от 0 до questions.length-1 есть в ответах
+              const allIndices = Array.from({ length: apiQuestions.length }, (_, i) => i);
+              const allCompleted = allIndices.every(index => answeredIndices.includes(index));
+              
+              if (allCompleted) {
+                // Все вопросы пройдены - очищаем результаты
+                localStorage.removeItem(`answers-${roundId}`);
+                localStorage.removeItem(`wrongAnswers-${roundId}`);
+                localStorage.removeItem(`progress-${roundId}`);
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Ошибка проверки завершенности:", error);
+        }
+      } catch (e) {
+        console.error("Ошибка проверки ответов:", e);
+      }
+    }
+    
     router.push("/");
   };
 

@@ -10,6 +10,8 @@ interface GuessVoiceGameProps {
   onPrevious?: () => void;
   canGoNext?: boolean;
   canGoPrevious?: boolean;
+  savedAnswer?: string | null;
+  savedWrongAnswers?: string[];
   onBack?: () => void;
 }
 
@@ -20,6 +22,8 @@ export default function GuessVoiceGame({
   onPrevious,
   canGoNext = false,
   canGoPrevious = false,
+  savedAnswer = null,
+  savedWrongAnswers = [],
   onBack,
 }: GuessVoiceGameProps) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -37,14 +41,31 @@ export default function GuessVoiceGame({
   const isPlayingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Нормализация данных — поддержка старого и нового формата
-  const correctAnswers =
-    question.correctAnswers ||
-    (question.correctAnswer
-      ? question.correctAnswer.includes(" | ")
-        ? question.correctAnswer.split(" | ")
-        : [question.correctAnswer]
-      : []);
+  // Нормализация правильных ответов - поддержка массива и строки с разделителями
+  const correctAnswers = (() => {
+    // Приоритет 1: correctAnswers (массив)
+    if (question.correctAnswers && Array.isArray(question.correctAnswers)) {
+      return question.correctAnswers.filter((a: any) => a);
+    }
+    // Приоритет 2: correctAnswer как массив
+    if (question.correctAnswer && Array.isArray(question.correctAnswer)) {
+      return question.correctAnswer.filter((a: any) => a);
+    }
+    // Приоритет 3: correctAnswer как строка с разделителями
+    if (question.correctAnswer && typeof question.correctAnswer === 'string') {
+      if (question.correctAnswer.includes(" | ")) {
+        return question.correctAnswer.split(" | ").map((a: string) => a.trim()).filter((a: string) => a);
+      }
+      if (question.correctAnswer.includes("|")) {
+        return question.correctAnswer.split("|").map((a: string) => a.trim()).filter((a: string) => a);
+      }
+      if (question.correctAnswer.includes(", ")) {
+        return question.correctAnswer.split(", ").map((a: string) => a.trim()).filter((a: string) => a);
+      }
+      return [question.correctAnswer.trim()].filter((a: string) => a);
+    }
+    return [];
+  })();
 
   // Определяем, является ли оригинал видео
   const isOriginalVideo =
@@ -56,13 +77,39 @@ export default function GuessVoiceGame({
 
   // Сброс состояния при смене вопроса
   useEffect(() => {
-    setTextInput("");
-    setAttempts(0);
-    setShowResult(false);
-    setIsCorrect(false);
-    setShowAnswerButton(false);
+    // Если есть сохраненный правильный ответ - восстанавливаем состояние
+    if (savedAnswer && savedAnswer !== "✓" && typeof savedAnswer === 'string' && savedAnswer.trim() !== "") {
+      setIsCorrect(true);
+      setTextInput("");
+      // Находим индекс правильного ответа в массиве correctAnswers
+      const answerIndex = correctAnswers.findIndex(
+        (ans: string) => ans.toLowerCase().trim() === savedAnswer.toLowerCase().trim()
+      );
+      if (answerIndex !== -1) {
+        setRevealedAnswerIndex(answerIndex);
+      } else {
+        // Если не нашли точное совпадение, используем первый правильный ответ
+        setRevealedAnswerIndex(0);
+      }
+      // Показываем блок с правильным ответом
+      setShowingAnswer(true);
+    } else if (savedAnswer === "✓") {
+      // Если savedAnswer это просто маркер "✓", показываем первый правильный ответ
+      setIsCorrect(true);
+      setTextInput("");
+      setRevealedAnswerIndex(0);
+      setShowingAnswer(true);
+    } else {
+      // Для новых вопросов сбрасываем все состояние
+      setTextInput("");
+      setIsCorrect(false);
+      setRevealedAnswerIndex(0);
+      setShowingAnswer(false);
+    }
+    setAttempts(savedWrongAnswers?.length || 0);
+    setShowResult(false); // Всегда сбрасываем showResult при смене вопроса
+    setShowAnswerButton(savedWrongAnswers && savedWrongAnswers.length >= 3);
     setRevealedAnswerIndex(0);
-    setShowingAnswer(false);
   }, [question]);
 
   // Обновление аудио при смене вопроса
@@ -236,7 +283,7 @@ export default function GuessVoiceGame({
   const checkAnswer = (answer: string): boolean => {
     const normalizedAnswer = answer.toLowerCase().trim();
     return correctAnswers.some(
-      (correct) => correct.toLowerCase().trim() === normalizedAnswer
+      (correct: string) => correct.toLowerCase().trim() === normalizedAnswer
     );
   };
 
@@ -272,12 +319,22 @@ export default function GuessVoiceGame({
   };
 
   const handleShowAnswer = () => {
+    setIsCorrect(true);
     setShowingAnswer(true);
     // Циклический показ ответов
-    setRevealedAnswerIndex((prev) => (prev + 1) % correctAnswers.length);
+    // При первом нажатии показываем первый ответ (индекс 0), при последующих - следующий
+    setRevealedAnswerIndex((prev) => {
+      // Если это первый показ (prev === 0 и showingAnswer еще false), оставляем 0
+      if (prev === 0 && !showingAnswer) {
+        return 0;
+      }
+      // Иначе переходим к следующему ответу циклически
+      return (prev + 1) % correctAnswers.length;
+    });
+    onAnswer(true);
   };
 
-  const currentRevealedAnswer = correctAnswers[revealedAnswerIndex];
+  const currentRevealedAnswer = correctAnswers[revealedAnswerIndex] || correctAnswers[0] || "";
 
   return (
     <div
@@ -381,8 +438,7 @@ export default function GuessVoiceGame({
             }}
             className="w-40 h-40 md:w-48 md:h-48 rounded-full flex items-center justify-center mb-4 backdrop-blur-md overflow-hidden relative"
           >
-            {showResult &&
-            isCorrect &&
+            {((showResult && isCorrect) || showingAnswer || (savedAnswer && isCorrect)) &&
             isOriginalVideo &&
             question.originalAudioUrl ? (
               <video
@@ -525,7 +581,7 @@ export default function GuessVoiceGame({
                   {isPlaying ? "⏸ Пауза" : "▶ Воспроизвести"}
                 </motion.button>
 
-                {showResult && isCorrect && question.originalAudioUrl && (
+                {((showResult && isCorrect) || showingAnswer || (savedAnswer && isCorrect)) && question.originalAudioUrl && (
                   <motion.button
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -627,8 +683,13 @@ export default function GuessVoiceGame({
                   ? "rgba(34, 197, 94, 0.2)"
                   : "rgba(239, 68, 68, 0.2)"
                 : "rgba(255, 255, 255, 0.1)",
+              scale: showResult ? (isCorrect ? [1, 1.02, 1] : [1, 0.98, 1]) : 1,
+              x: showResult && !isCorrect ? [0, -5, 5, -5, 5, 0] : 0,
             }}
-            transition={{ duration: 0.3 }}
+            transition={{
+              duration: showResult ? (isCorrect ? 0.5 : 0.4) : 0.3,
+              ease: isCorrect ? "easeOut" : "easeInOut",
+            }}
             className="relative"
           >
             <input
@@ -657,21 +718,60 @@ export default function GuessVoiceGame({
             disabled={isCorrect || showingAnswer}
             whileHover={isCorrect || showingAnswer ? {} : { scale: 1.02 }}
             whileTap={{ scale: isCorrect || showingAnswer ? 1 : 0.98 }}
-            className="w-full py-3 rounded-xl text-white font-medium transition-all disabled:opacity-50 relative z-10"
+            animate={{
+              scale: showResult
+                ? isCorrect
+                  ? [1, 1.1, 1.05, 1]
+                  : [1, 0.95, 1.02, 1]
+                : 1,
+              boxShadow: showResult
+                ? isCorrect
+                  ? [
+                      "0 2px 8px rgba(0, 0, 0, 0.15)",
+                      "0 4px 20px rgba(34, 197, 94, 0.4)",
+                      "0 2px 8px rgba(0, 0, 0, 0.15)",
+                    ]
+                  : [
+                      "0 2px 8px rgba(0, 0, 0, 0.15)",
+                      "0 4px 20px rgba(239, 68, 68, 0.4)",
+                      "0 2px 8px rgba(0, 0, 0, 0.15)",
+                    ]
+                : "0 2px 8px rgba(0, 0, 0, 0.15)",
+            }}
+            transition={{
+              duration: showResult ? (isCorrect ? 0.6 : 0.5) : 0.2,
+              ease: isCorrect ? [0.16, 1, 0.3, 1] : "easeInOut",
+            }}
+            className="w-full py-3 rounded-xl font-medium transition-all disabled:opacity-50 relative z-10"
             style={{
-              background: "rgba(255, 255, 255, 0.15)",
-              border: "2px solid rgba(255, 255, 255, 0.5)",
-              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+              background: showResult
+                ? isCorrect
+                  ? "rgba(34, 197, 94, 0.3)"
+                  : "rgba(239, 68, 68, 0.3)"
+                : "rgba(255, 255, 255, 0.15)",
+              border: showResult
+                ? isCorrect
+                  ? "2px solid rgba(34, 197, 94, 0.8)"
+                  : "2px solid rgba(239, 68, 68, 0.8)"
+                : "2px solid rgba(255, 255, 255, 0.5)",
               backdropFilter: "blur(10px)",
+              color: showResult
+                ? isCorrect
+                  ? "rgba(34, 197, 94, 1)"
+                  : "rgba(239, 68, 68, 1)"
+                : "white",
             }}
           >
-            Проверить
+            {showResult
+              ? isCorrect
+                ? "✓ Правильно!"
+                : "✗ Неправильно"
+              : "Проверить"}
           </motion.button>
-          <div className="h-3 md:h-4"></div>
         </form>
 
         {/* Кнопка показать ответ */}
-        {showAnswerButton && !isCorrect && (
+        {((showAnswerButton && !isCorrect) || (isCorrect && correctAnswers.length > 1) || showingAnswer) && (
           <motion.button
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -686,7 +786,11 @@ export default function GuessVoiceGame({
               backdropFilter: "blur(10px)",
             }}
           >
-            {showingAnswer ? "Показать другой ответ" : "Показать ответ"}
+            {showingAnswer && correctAnswers.length > 1
+              ? "Показать другой ответ"
+              : isCorrect && correctAnswers.length > 1
+              ? "Показать другой ответ"
+              : "Показать ответ"}
           </motion.button>
         )}
 
@@ -712,24 +816,9 @@ export default function GuessVoiceGame({
             )}
           </motion.div>
         )}
+        <div className="h-3 md:h-4"></div>
       </div>
 
-      {/* Результат */}
-      {showResult && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-2 md:mt-3 text-center flex-shrink-0"
-        >
-          <p
-            className={`text-base md:text-lg font-bold ${
-              isCorrect ? "text-green-400" : "text-red-400"
-            }`}
-          >
-            {isCorrect ? "✓ Правильно!" : "✗ Неправильно"}
-          </p>
-        </motion.div>
-      )}
     </div>
   );
 }

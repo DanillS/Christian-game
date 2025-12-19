@@ -21,17 +21,26 @@ export async function loadRoundData(roundId: string) {
   const normalizedRound = (roundId as RoundId) || 'guess-face'
   const fallback = fallbackMap[normalizedRound] || []
 
+  // Если Supabase не настроен или нет таблицы - возвращаем локальные данные
   if (!isSupabaseEnabled() || !tableMap[normalizedRound]) {
     return fallback
   }
 
   try {
-    const rows = await supabaseRestRequest<any[]>(tableMap[normalizedRound] as string, {
-      searchParams: {
-        select: '*',
-        order: 'created_at.asc',
-      },
-    })
+    // Уменьшаем таймаут до 2 секунд для быстрого ответа
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Request timeout')), 2000)
+    )
+
+    const rows = await Promise.race([
+      supabaseRestRequest<any[]>(tableMap[normalizedRound] as string, {
+        searchParams: {
+          select: '*',
+          order: 'created_at.asc',
+        },
+      }),
+      timeoutPromise,
+    ]) as any[]
 
     if (!rows || rows.length === 0) {
       return fallback
@@ -39,7 +48,7 @@ export async function loadRoundData(roundId: string) {
 
     return rows.map((row) => mapRow(normalizedRound, row))
   } catch (error) {
-    console.error('[roundDataLoader] Fallback to static data:', error)
+    // В случае ошибки сразу возвращаем локальные данные
     return fallback
   }
 }
@@ -53,6 +62,7 @@ function mapRow(roundId: RoundId, row: any) {
         parts: row.parts || ['nose', 'eyes', 'mouth', 'hands', 'full'],
         options: row.options || [],
         correctAnswer: row.correct_answer,
+        correctAnswers: row.correct_answers || (row.correct_answer ? (row.correct_answer.includes(" | ") ? row.correct_answer.split(" | ") : [row.correct_answer]) : []),
       }
     case 'bible-quotes':
       return {
@@ -65,8 +75,10 @@ function mapRow(roundId: RoundId, row: any) {
     case 'guess-voice':
       return {
         audioUrl: row.audio_url,
+        originalAudioUrl: row.original_audio_url,
         options: row.options || [],
         correctAnswer: row.correct_answer,
+        correctAnswers: row.correct_answers || (row.correct_answer ? (row.correct_answer.includes(" | ") ? row.correct_answer.split(" | ") : [row.correct_answer]) : []),
       }
     default:
       return row

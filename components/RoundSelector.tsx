@@ -227,7 +227,7 @@ export default function RoundSelector() {
           duration: 0.6,
           ease: [0.16, 1, 0.3, 1],
         }}
-        className="text-center flex-shrink-0 mb-6 md:mb-8 lg:mb-10"
+        className="text-center flex-shrink-0 mb-12 md:mb-14 lg:mb-16"
       >
         <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-white mb-1 drop-shadow-2xl pulse-glow">
           Рождественские Тайны
@@ -242,15 +242,15 @@ export default function RoundSelector() {
         </motion.p>
       </motion.div>
 
-      {/* Треугольное расположение иконок */}
+      {/* Равномерное расположение иконок */}
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="flex flex-col items-center justify-center w-full max-w-4xl overflow-visible px-2 md:px-4 py-2 md:py-4 pb-6 md:pb-4 gap-6 md:gap-6 lg:gap-8"
+        className="flex flex-col items-center justify-center w-full max-w-4xl overflow-visible px-2 md:px-4 py-2 md:py-4 pb-12 md:pb-16 lg:pb-20"
       >
-        {/* Верхний ряд: 2 иконки */}
-        <div className="flex items-center justify-center gap-4 md:gap-8 lg:gap-12 w-full">
+        {/* Верхний ряд: 2 иконки с равномерным распределением */}
+        <div className="flex items-center justify-evenly w-full mb-6 md:mb-8 lg:mb-10">
           {rounds.filter(r => r.id !== 'bible-quotes').map((round) => (
             <motion.div
               key={round.id}
@@ -267,7 +267,7 @@ export default function RoundSelector() {
               }}
               onClick={(e) => handleCardClick(round.id, e)}
             >
-              {/* App icon container - круглый, увеличенный */}
+              {/* App icon container - круглый, одинакового размера */}
               <div
                 className="rounded-full flex items-center justify-center relative overflow-hidden mb-2 md:mb-3 flex-shrink-0 golden-glow deep-shadow"
                 style={{
@@ -324,7 +324,7 @@ export default function RoundSelector() {
               }}
               onClick={(e) => handleCardClick(round.id, e)}
             >
-              {/* App icon container - круглый, увеличенный */}
+              {/* App icon container - круглый, одинакового размера */}
               <div
                 className="rounded-full flex items-center justify-center relative overflow-hidden mb-2 md:mb-3 flex-shrink-0 golden-glow deep-shadow"
                 style={{
