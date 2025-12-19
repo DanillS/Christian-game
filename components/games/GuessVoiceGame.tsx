@@ -596,8 +596,8 @@ export default function GuessVoiceGame({
         )}
       </div>
 
-      <div className="flex-1 overflow-visible min-h-0">
-        <form onSubmit={handleTextSubmit} className="space-y-3 overflow-visible">
+      <div className="flex-1 overflow-y-auto min-h-0 px-1">
+        <form onSubmit={handleTextSubmit} className="space-y-3">
           <motion.div
             animate={{
               borderColor: showResult
