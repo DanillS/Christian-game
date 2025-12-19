@@ -27,66 +27,79 @@ export default function GuessFaceGame({
   savedWrongAnswers = [],
   onBack,
 }: GuessFaceGameProps) {
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(
-    savedAnswer || null
-  );
   const [textInput, setTextInput] = useState("");
+  const [attempts, setAttempts] = useState(0);
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
+  const [showAnswerButton, setShowAnswerButton] = useState(false);
+  const [revealedAnswerIndex, setRevealedAnswerIndex] = useState(0);
+  const [showingAnswer, setShowingAnswer] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // При смене вопроса НЕ сбрасываем состояние (как в GuessVoiceGame)
-  // useEffect убран, чтобы сохранять состояние при навигации
+  // Нормализация данных — поддержка старого и нового формата
+  const correctAnswers =
+    question.correctAnswers ||
+    (question.correctAnswer
+      ? question.correctAnswer.includes(" | ")
+        ? question.correctAnswer.split(" | ")
+        : [question.correctAnswer]
+      : []);
 
-  const handleSelect = (answer: string) => {
-    if (isCorrect) return; // Блокируем только если уже угадали правильно
-    if (selectedAnswer !== null && !isCorrect) return; // Блокируем, если идёт анимация
+  // Сброс состояния при смене вопроса
+  useEffect(() => {
+    setTextInput("");
+    setAttempts(0);
+    setShowResult(false);
+    setIsCorrect(false);
+    setShowAnswerButton(false);
+    setRevealedAnswerIndex(0);
+    setShowingAnswer(false);
+  }, [question]);
 
-    setSelectedAnswer(answer);
-    const correct = answer === question.correctAnswer;
-    setIsCorrect(correct);
-    setShowResult(true);
-
-    if (correct) {
-      // Правильный ответ
-      onAnswer(answer, true);
-    } else {
-      // Неправильный ответ - показываем анимацию и держим 2 секунды
-      onAnswer(answer, false);
-      setTimeout(() => {
-        setSelectedAnswer(null);
-        setShowResult(false);
-        setIsCorrect(false);
-      }, 2000);
-    }
+  const checkAnswer = (answer: string): boolean => {
+    const normalizedAnswer = answer.toLowerCase().trim();
+    return correctAnswers.some(
+      (correct) => correct.toLowerCase().trim() === normalizedAnswer
+    );
   };
 
   // Проверка текстового ввода
   const handleTextSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isCorrect) return;
+    if (isCorrect || showingAnswer) return;
     if (!textInput.trim()) return;
 
     const answer = textInput.trim();
-    setSelectedAnswer(answer);
-    
-    const correct = answer.toLowerCase() === question.correctAnswer.toLowerCase();
+    const correct = checkAnswer(answer);
     setIsCorrect(correct);
     setShowResult(true);
 
     if (correct) {
       onAnswer(answer, true);
     } else {
+      const newAttempts = attempts + 1;
+      setAttempts(newAttempts);
       onAnswer(answer, false);
+
+      if (newAttempts >= 3) {
+        setShowAnswerButton(true);
+      }
+
       setTimeout(() => {
-        setSelectedAnswer(null);
         setShowResult(false);
-        setIsCorrect(false);
         setTextInput("");
         inputRef.current?.focus();
-      }, 2000);
+      }, 1500);
     }
   };
+
+  const handleShowAnswer = () => {
+    setShowingAnswer(true);
+    // Циклический показ ответов
+    setRevealedAnswerIndex((prev) => (prev + 1) % correctAnswers.length);
+  };
+
+  const currentRevealedAnswer = correctAnswers[revealedAnswerIndex];
 
   // Показываем полную фотографию только если правильно ответили
   const imageToShow =
@@ -119,7 +132,7 @@ export default function GuessFaceGame({
           }}
           whileTap={{ scale: 0.95 }}
           onClick={onBack}
-          className="absolute top-3 left-3 text-white p-2 md:px-3 md:py-2 rounded-lg font-semibold backdrop-blur-xl flex items-center gap-1.5 text-xs md:text-sm z-10"
+          className="absolute top-2 left-2 md:top-3 md:left-3 text-white p-1.5 md:px-3 md:py-2 rounded-lg font-semibold backdrop-blur-xl flex items-center gap-1 md:gap-1.5 text-xs md:text-sm z-10"
           style={{
             background: "transparent",
             border: "1.5px solid rgba(255, 255, 255, 0.5)",
@@ -128,7 +141,7 @@ export default function GuessFaceGame({
           }}
         >
           <svg
-            className="w-5 h-5 md:w-4 md:h-4"
+            className="w-4 h-4 md:w-4 md:h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -240,6 +253,13 @@ export default function GuessFaceGame({
         )}
       </div>
 
+      {/* Счетчик попыток */}
+      {!isCorrect && (
+        <p className="text-white/60 text-center text-xs mb-3 md:mb-4">
+          Попыток: {attempts}/3
+        </p>
+      )}
+
       <div className="flex-1 min-h-0 px-1 pb-3 md:pb-4">
         <form onSubmit={handleTextSubmit} className="space-y-3">
           <motion.div
@@ -263,7 +283,7 @@ export default function GuessFaceGame({
               type="text"
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
-              disabled={showResult && isCorrect}
+              disabled={isCorrect || showingAnswer}
               placeholder="Введите ответ..."
               className="w-full px-4 py-3 rounded-xl bg-transparent text-white placeholder-white/50 border-2 focus:outline-none focus:border-white/80 transition-all text-sm md:text-base"
               style={{
@@ -281,13 +301,9 @@ export default function GuessFaceGame({
           
           <motion.button
             type="submit"
-            disabled={showResult && isCorrect}
-            whileHover={
-              showResult && isCorrect
-                ? {}
-                : { scale: 1.02 }
-            }
-            whileTap={{ scale: showResult && isCorrect ? 1 : 0.98 }}
+            disabled={isCorrect || showingAnswer}
+            whileHover={isCorrect || showingAnswer ? {} : { scale: 1.02 }}
+            whileTap={{ scale: isCorrect || showingAnswer ? 1 : 0.98 }}
             className="w-full py-3 rounded-xl text-white font-medium transition-all disabled:opacity-50 relative z-10"
             style={{
               background: "rgba(255, 255, 255, 0.15)",
@@ -300,17 +316,60 @@ export default function GuessFaceGame({
           </motion.button>
           <div className="h-3 md:h-4"></div>
         </form>
+
+        {/* Кнопка показать ответ */}
+        {showAnswerButton && !isCorrect && (
+          <motion.button
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            onClick={handleShowAnswer}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full mt-3 py-3 rounded-xl text-white font-medium transition-all relative z-10"
+            style={{
+              background: "rgba(255, 193, 7, 0.3)",
+              border: "2px solid rgba(255, 193, 7, 0.6)",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+              backdropFilter: "blur(10px)",
+            }}
+          >
+            {showingAnswer ? "Показать другой ответ" : "Показать ответ"}
+          </motion.button>
+        )}
+
+        {/* Показ правильного ответа */}
+        {showingAnswer && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-3 p-3 rounded-xl text-center"
+            style={{
+              background: "rgba(255, 193, 7, 0.2)",
+              border: "1px solid rgba(255, 193, 7, 0.4)",
+            }}
+          >
+            <p className="text-white/80 text-xs mb-1">Правильный ответ:</p>
+            <p className="text-yellow-300 font-semibold">
+              {currentRevealedAnswer}
+            </p>
+            {correctAnswers.length > 1 && (
+              <p className="text-white/50 text-xs mt-1">
+                (ответ {revealedAnswerIndex + 1} из {correctAnswers.length})
+              </p>
+            )}
+          </motion.div>
+        )}
       </div>
 
-      {/* Сообщение о результате */}
+      {/* Результат */}
       {showResult && (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-6 text-center"
+          className="mt-2 md:mt-3 text-center flex-shrink-0"
         >
           <p
-            className={`text-2xl font-bold ${
+            className={`text-base md:text-lg font-bold ${
               isCorrect ? "text-green-400" : "text-red-400"
             }`}
           >

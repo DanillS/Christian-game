@@ -113,63 +113,31 @@ export default function BibleQuotesGame({
       }}
       className="backdrop-blur-md rounded-xl p-4 md:p-5 h-full flex flex-col overflow-y-auto overflow-x-hidden relative min-h-0"
     >
-      {onBack && (
-        <motion.button
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          whileHover={{
-            scale: 1.05,
-            backgroundColor: "rgba(255, 255, 255, 0.9)",
-            color: "#000",
-            transition: { duration: 0.2 },
-          }}
-          whileTap={{ scale: 0.95 }}
-          onClick={onBack}
-          className="absolute top-3 left-3 text-white p-2 md:px-3 md:py-2 rounded-lg font-semibold backdrop-blur-xl flex items-center gap-1.5 text-xs md:text-sm z-10"
-          style={{
-            background: "transparent",
-            border: "1.5px solid rgba(255, 255, 255, 0.5)",
-            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
-            willChange: "transform",
-          }}
-        >
-          <svg
-            className="w-5 h-5 md:w-4 md:h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2.5}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-          <span className="hidden md:inline">Назад</span>
-        </motion.button>
-      )}
-
-      {/* Навигация */}
-      <div className="flex items-center justify-between mb-3 md:mb-4 pt-10">
-        {canGoPrevious && onPrevious ? (
+      {/* Заголовок и кнопка назад */}
+      <div className="flex items-center justify-between mb-3 md:mb-4 pt-2">
+        {onBack && (
           <motion.button
-            onClick={onPrevious}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             whileHover={{
               scale: 1.05,
               backgroundColor: "rgba(255, 255, 255, 0.9)",
               color: "#000",
+              transition: { duration: 0.2 },
             }}
             whileTap={{ scale: 0.95 }}
-            className="text-white p-2 rounded-lg"
+            onClick={onBack}
+            className="text-white p-1.5 md:px-3 md:py-2 rounded-lg font-semibold backdrop-blur-xl flex items-center gap-1 md:gap-1.5 text-xs md:text-sm z-10"
             style={{
               background: "transparent",
               border: "1.5px solid rgba(255, 255, 255, 0.5)",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+              willChange: "transform",
             }}
           >
             <svg
-              className="w-5 h-5"
+              className="w-4 h-4 md:w-4 md:h-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -177,51 +145,20 @@ export default function BibleQuotesGame({
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
+                strokeWidth={2.5}
                 d="M15 19l-7-7 7-7"
               />
             </svg>
+            <span className="hidden md:inline">Назад</span>
           </motion.button>
-        ) : (
-          <div className="w-10" />
         )}
+        {!onBack && <div></div>}
 
         <h2 className="text-lg md:text-xl font-bold text-center text-white flex-1">
           📖 Библейские Цитаты 🎄
         </h2>
 
-        {canGoNext && onNext ? (
-          <motion.button
-            onClick={onNext}
-            whileHover={{
-              scale: 1.05,
-              backgroundColor: "rgba(255, 255, 255, 0.9)",
-              color: "#000",
-            }}
-            whileTap={{ scale: 0.95 }}
-            className="text-white p-2 rounded-lg"
-            style={{
-              background: "transparent",
-              border: "1.5px solid rgba(255, 255, 255, 0.5)",
-            }}
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </motion.button>
-        ) : (
-          <div className="w-10" />
-        )}
+        <div className="w-10 md:w-12"></div>
       </div>
 
       {/* Вопрос */}
@@ -238,10 +175,78 @@ export default function BibleQuotesGame({
           </p>
         </div>
 
-        {/* Счетчик попыток */}
-        <p className="text-white/60 text-center text-xs">
-          Попыток: {attempts}/3
-        </p>
+        {/* Счетчик попыток и кнопки перемещения на одной линии */}
+        <div className="flex items-center justify-between">
+          {canGoPrevious && onPrevious ? (
+            <motion.button
+              onClick={onPrevious}
+              whileHover={{
+                scale: 1.05,
+                backgroundColor: "rgba(255, 255, 255, 0.9)",
+                color: "#000",
+              }}
+              whileTap={{ scale: 0.95 }}
+              className="text-white p-2 rounded-lg"
+              style={{
+                background: "transparent",
+                border: "1.5px solid rgba(255, 255, 255, 0.5)",
+              }}
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </motion.button>
+          ) : (
+            <div className="w-10" />
+          )}
+
+          <p className="text-white/60 text-center text-xs">
+            Попыток: {attempts}/3
+          </p>
+
+          {canGoNext && onNext ? (
+            <motion.button
+              onClick={onNext}
+              whileHover={{
+                scale: 1.05,
+                backgroundColor: "rgba(255, 255, 255, 0.9)",
+                color: "#000",
+              }}
+              whileTap={{ scale: 0.95 }}
+              className="text-white p-2 rounded-lg"
+              style={{
+                background: "transparent",
+                border: "1.5px solid rgba(255, 255, 255, 0.5)",
+              }}
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </motion.button>
+          ) : (
+            <div className="w-10" />
+          )}
+        </div>
       </div>
 
       {/* Форма ввода */}

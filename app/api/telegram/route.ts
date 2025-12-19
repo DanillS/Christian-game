@@ -213,6 +213,25 @@ async function processUpdate(update: TelegramUpdate) {
       return;
     }
 
+    // Обработка старых удаленных игр - обновляем клавиатуру
+    if (text === "🎵 Угадай мелодию" || text === "🎶 Угадай мелодию" || text === "Угадай мелодию") {
+      await sendTelegramMessage(
+        chatId,
+        "❌ Игра 'Угадай мелодию' больше не доступна.",
+        getMainMenuKeyboard()
+      );
+      return;
+    }
+
+    if (text === "📅 Календарь" || text === "📆 Календарь" || text === "Календарь") {
+      await sendTelegramMessage(
+        chatId,
+        "❌ Игра 'Календарь' больше не доступна.",
+        getMainMenuKeyboard()
+      );
+      return;
+    }
+
     if (text === "🖼️ Добавить иконку") {
       if (userId) {
         userStates.set(userId, {
@@ -603,6 +622,7 @@ async function startAddFace(message: TelegramMessage) {
     step: "options",
     data: {
       options: [],
+      correctAnswers: [],
       parts: ["nose", "eyes", "mouth", "hands", "full"],
       difficulty: "medium",
     },
@@ -623,7 +643,7 @@ async function startAddVoice(message: TelegramMessage) {
   userStates.set(userId, {
     type: "add_voice",
     step: "options",
-    data: { options: [], difficulty: "medium" },
+    data: { options: [], correctAnswers: [], difficulty: "medium" },
   });
   await sendTelegramMessage(
     chatId,
@@ -653,13 +673,13 @@ async function startAddQuote(message: TelegramMessage) {
 function getNextStep(type: string, currentStep: string): string {
   const flows: Record<string, Record<string, string>> = {
     add_face: {
-      options: "correctAnswer",
-      correctAnswer: "photo",
+      options: "correctAnswers",
+      correctAnswers: "photo",
       photo: "fullPhoto",
     },
     add_voice: {
-      options: "correctAnswer",
-      correctAnswer: "audio",
+      options: "correctAnswers",
+      correctAnswers: "audio",
       audio: "originalAudio",
     },
     add_quote: {
@@ -705,8 +725,9 @@ async function handleStateStep(message: TelegramMessage, state: UserState) {
   }
 
   if (state.step === "correctAnswer") {
+    // Обработка для библейских цитат (старая логика)
     const text = (message.text || message.caption || "").trim();
-    if (text && state.type) {
+    if (text && state.type === "add_quote") {
       // Проверяем, что правильный ответ есть в списке вариантов
       const options = state.data.options || [];
       if (!options.includes(text)) {
@@ -722,6 +743,55 @@ async function handleStateStep(message: TelegramMessage, state: UserState) {
       state.data.correctAnswer = text;
       state.step = getNextStep(state.type, "correctAnswer");
       await processStateStep(chatId, userId, state);
+    }
+    return;
+  }
+
+  // Обработка нескольких правильных ответов для "add_face" и "add_voice"
+  if (state.step === "correctAnswers" && (state.type === "add_face" || state.type === "add_voice")) {
+    const text = (message.text || message.caption || "").trim();
+    if (text === "✅ Готово (минимум 1 ответ)") {
+      if (!state.data.correctAnswers || state.data.correctAnswers.length < 1) {
+        await sendTelegramMessage(
+          chatId,
+          "❌ Нужен минимум 1 правильный ответ. Введите ответ.",
+          getCancelKeyboard()
+        );
+        return;
+      }
+      state.step = getNextStep(state.type, "correctAnswers");
+      await processStateStep(chatId, userId, state);
+      return;
+    }
+    if (text && text !== "❌ Отмена") {
+      // Проверяем, что ответ есть в списке вариантов
+      const options = state.data.options || [];
+      if (!options.includes(text)) {
+        await sendTelegramMessage(
+          chatId,
+          `❌ Ошибка: "${text}" не найден в списке вариантов.\n\nВарианты:\n${options
+            .map((o: string, i: number) => `${i + 1}. ${o}`)
+            .join("\n")}\n\nВведите правильный ответ точно как в списке:`,
+          getCancelKeyboard()
+        );
+        return;
+      }
+      if (!state.data.correctAnswers) state.data.correctAnswers = [];
+      state.data.correctAnswers.push(text);
+      const count = state.data.correctAnswers.length;
+      const keyboard = {
+        keyboard: [
+          [{ text: "✅ Готово (минимум 1 ответ)" }],
+          [{ text: "❌ Отмена" }],
+        ],
+        resize_keyboard: true,
+        one_time_keyboard: false,
+      };
+      await sendTelegramMessage(
+        chatId,
+        `✅ Ответ ${count} добавлен: "${text}"\n\nВведите еще один правильный ответ или нажмите "Готово":`,
+        keyboard
+      );
     }
     return;
   }
@@ -942,22 +1012,38 @@ async function processStateStep(
       getCancelKeyboard()
     );
   } else if (state.step === "correctAnswer") {
+    // Только для библейских цитат (старая логика)
     const options = state.data.options || [];
     const optionsText = options
       .map((o: string, i: number) => `${i + 1}. ${o}`)
       .join("\n");
-    let stepNumber = "2/3";
-    if (state.type === "add_quote") {
-      stepNumber = "4/5";
-    } else if (state.type === "add_face") {
-      stepNumber = "2/4";
-    } else if (state.type === "add_voice") {
-      stepNumber = "2/3";
-    }
     await sendTelegramMessage(
       chatId,
-      `📝 Шаг ${stepNumber}: Выберите правильный ответ\n\nВарианты ответов:\n${optionsText}\n\n✅ Введите правильный ответ (точно как в списке):`,
+      `📝 Шаг 4/5: Выберите правильный ответ\n\nВарианты ответов:\n${optionsText}\n\n✅ Введите правильный ответ (точно как в списке):`,
       getCancelKeyboard()
+    );
+  } else if (state.step === "correctAnswers") {
+    // Для "add_face" и "add_voice" - несколько правильных ответов
+    const options = state.data.options || [];
+    const optionsText = options
+      .map((o: string, i: number) => `${i + 1}. ${o}`)
+      .join("\n");
+    let stepNumber = "2/4";
+    if (state.type === "add_voice") {
+      stepNumber = "2/4";
+    }
+    const keyboard = {
+      keyboard: [
+        [{ text: "✅ Готово (минимум 1 ответ)" }],
+        [{ text: "❌ Отмена" }],
+      ],
+      resize_keyboard: true,
+      one_time_keyboard: false,
+    };
+    await sendTelegramMessage(
+      chatId,
+      `📝 Шаг ${stepNumber}: Введите правильный ответ (можно несколько вариантов)\n\nВарианты ответов:\n${optionsText}\n\n✅ Введите правильный ответ (точно как в списке):`,
+      keyboard
     );
   } else if (state.step === "photo") {
     await sendTelegramMessage(
@@ -1018,6 +1104,14 @@ async function finalizeQuestion(
         state.step = "options";
         return;
       }
+      if (!state.data.correctAnswers || state.data.correctAnswers.length < 1) {
+        await sendTelegramMessage(
+          chatId,
+          "❌ Нужен минимум 1 правильный ответ. Введите ответ."
+        );
+        state.step = "correctAnswers";
+        return;
+      }
       await saveFaceQuestion(chatId, state);
     } else if (state.type === "add_voice") {
       if (state.data.options.length < 2) {
@@ -1026,6 +1120,14 @@ async function finalizeQuestion(
           "❌ Нужно минимум 2 варианта ответа. Введите еще варианты."
         );
         state.step = "options";
+        return;
+      }
+      if (!state.data.correctAnswers || state.data.correctAnswers.length < 1) {
+        await sendTelegramMessage(
+          chatId,
+          "❌ Нужен минимум 1 правильный ответ. Введите ответ."
+        );
+        state.step = "correctAnswers";
         return;
       }
       await saveVoiceQuestion(chatId, state);
@@ -1150,7 +1252,8 @@ async function saveFaceQuestion(chatId: number, state: UserState) {
       full_image_url: fullImageUrl,
       parts: state.data.parts || ["nose", "eyes", "mouth", "hands", "full"],
       options: state.data.options,
-      correct_answer: state.data.correctAnswer,
+      correct_answer: state.data.correctAnswers?.join(" | ") || state.data.correctAnswer || "",
+      correct_answers: state.data.correctAnswers || (state.data.correctAnswer ? [state.data.correctAnswer] : []),
     },
   });
 
@@ -1282,7 +1385,8 @@ async function saveVoiceQuestion(chatId: number, state: UserState) {
       audio_url: publicUrl,
       original_audio_url: originalAudioUrl,
       options: state.data.options,
-      correct_answer: state.data.correctAnswer,
+      correct_answer: state.data.correctAnswers?.join(" | ") || state.data.correctAnswer || "",
+      correct_answers: state.data.correctAnswers || (state.data.correctAnswer ? [state.data.correctAnswer] : []),
     },
   });
 

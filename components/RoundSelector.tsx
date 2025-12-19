@@ -219,7 +219,7 @@ export default function RoundSelector() {
   };
 
   return (
-    <div className="h-full w-full flex flex-col items-center justify-center px-2 md:px-4 relative z-10 overflow-visible">
+    <div className="h-full w-full flex flex-col items-center justify-start px-2 md:px-4 relative z-10 overflow-visible pt-4 md:pt-6 lg:pt-8">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -227,8 +227,7 @@ export default function RoundSelector() {
           duration: 0.6,
           ease: [0.16, 1, 0.3, 1],
         }}
-        className="text-center mb-2 md:mb-3 flex-shrink-0"
-        style={{ marginBottom: '40px' }}
+        className="text-center flex-shrink-0 mb-6 md:mb-8 lg:mb-10"
       >
         <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-white mb-1 drop-shadow-2xl pulse-glow">
           Рождественские Тайны
@@ -248,10 +247,10 @@ export default function RoundSelector() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="flex flex-col items-center justify-center flex-1 w-full max-w-4xl overflow-visible min-h-0 px-2 md:px-4 py-4 md:py-6 gap-6 md:gap-8"
+        className="flex flex-col items-center justify-center w-full max-w-4xl overflow-visible px-2 md:px-4 py-2 md:py-4 pb-6 md:pb-4 gap-6 md:gap-6 lg:gap-8"
       >
         {/* Верхний ряд: 2 иконки */}
-        <div className="flex items-center justify-center gap-8 md:gap-12 lg:gap-16 w-full">
+        <div className="flex items-center justify-center gap-4 md:gap-8 lg:gap-12 w-full">
           {rounds.filter(r => r.id !== 'bible-quotes').map((round) => (
             <motion.div
               key={round.id}
@@ -270,7 +269,7 @@ export default function RoundSelector() {
             >
               {/* App icon container - круглый, увеличенный */}
               <div
-                className="rounded-full flex items-center justify-center relative overflow-hidden mb-3 flex-shrink-0 golden-glow deep-shadow"
+                className="rounded-full flex items-center justify-center relative overflow-hidden mb-2 md:mb-3 flex-shrink-0 golden-glow deep-shadow"
                 style={{
                   background: "rgba(255, 255, 255, 0.15)",
                   backdropFilter: "blur(20px)",
@@ -327,7 +326,7 @@ export default function RoundSelector() {
             >
               {/* App icon container - круглый, увеличенный */}
               <div
-                className="rounded-full flex items-center justify-center relative overflow-hidden mb-3 flex-shrink-0 golden-glow deep-shadow"
+                className="rounded-full flex items-center justify-center relative overflow-hidden mb-2 md:mb-3 flex-shrink-0 golden-glow deep-shadow"
                 style={{
                   background: "rgba(255, 255, 255, 0.15)",
                   backdropFilter: "blur(20px)",
