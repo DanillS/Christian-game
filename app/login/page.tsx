@@ -166,8 +166,8 @@ export default function LoginPage() {
             {/* Системная строка */}
             <SystemStatusBar />
 
-            {/* Контент авторизации */}
-            <div className="flex-1 flex flex-col items-center justify-center overflow-hidden px-4 py-6">
+            {/* Контент авторизации с скроллом на мобильных */}
+            <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto overflow-x-hidden px-4 py-6 min-h-0">
               {/* Скрытый input для предотвращения появления клавиатуры */}
               <input
                 ref={inputRef}

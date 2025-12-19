@@ -66,8 +66,8 @@ export default function RoundPage() {
             {/* Системная строка с часами */}
             <SystemStatusBar />
 
-            {/* Контент */}
-            <div className="flex-1 flex items-center justify-center overflow-hidden pt-10 md:pt-12 pb-12 md:pb-14">
+            {/* Контент с скроллом на мобильных */}
+            <div className="flex-1 flex items-center justify-center overflow-y-auto overflow-x-hidden pt-10 md:pt-12 pb-12 md:pb-14 min-h-0">
               <RoundGame
                 roundId={roundId}
                 initialQuestionIndex={currentQuestionIndex}

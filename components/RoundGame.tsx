@@ -283,7 +283,7 @@ export default function RoundGame({
   };
 
   return (
-    <div className="h-full w-full flex flex-col items-center justify-center px-2 md:px-4 relative overflow-hidden">
+    <div className="h-full w-full flex flex-col items-center justify-center px-2 md:px-4 relative overflow-y-auto overflow-x-hidden min-h-0">
       <AnimatePresence mode="wait">
         <motion.div
           key={currentIndex}
@@ -294,9 +294,9 @@ export default function RoundGame({
             duration: 0.4,
             ease: [0.16, 1, 0.3, 1],
           }}
-          className="w-full h-full max-w-4xl overflow-hidden flex items-center justify-center"
+          className="w-full h-full max-w-4xl overflow-y-auto overflow-x-hidden flex items-center justify-center min-h-0"
         >
-          <div className="w-full h-full overflow-hidden">
+          <div className="w-full h-full overflow-y-auto overflow-x-hidden min-h-0">
             {renderGame(onBack)}
           </div>
         </motion.div>

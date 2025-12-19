@@ -119,8 +119,8 @@ export default function Home() {
             {/* Системная строка с часами */}
             <SystemStatusBar />
 
-            {/* Контент */}
-            <div className="flex-1 flex items-center justify-center overflow-visible pt-8 md:pt-10 pb-10 md:pb-12">
+            {/* Контент с скроллом на мобильных */}
+            <div className="flex-1 flex items-center justify-center overflow-y-auto overflow-x-hidden pt-8 md:pt-10 pb-10 md:pb-12 min-h-0">
               <RoundSelector />
             </div>
 

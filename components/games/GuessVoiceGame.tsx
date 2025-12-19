@@ -273,7 +273,7 @@ export default function GuessVoiceGame({
         border: "1.5px solid rgba(255, 255, 255, 0.3)",
         boxShadow: "0 2px 12px rgba(0, 0, 0, 0.1)",
       }}
-      className="backdrop-blur-md rounded-xl p-4 md:p-5 h-full flex flex-col overflow-hidden relative"
+      className="backdrop-blur-md rounded-xl p-4 md:p-5 h-full flex flex-col overflow-y-auto overflow-x-hidden relative min-h-0"
     >
       {onBack && (
         <motion.button
@@ -596,7 +596,7 @@ export default function GuessVoiceGame({
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto min-h-0 px-1">
+      <div className="flex-1 min-h-0 px-1 pb-3 md:pb-4">
         <form onSubmit={handleTextSubmit} className="space-y-3">
           <motion.div
             animate={{
@@ -654,6 +654,7 @@ export default function GuessVoiceGame({
           >
             Проверить
           </motion.button>
+          <div className="h-3 md:h-4"></div>
         </form>
       </div>
 
