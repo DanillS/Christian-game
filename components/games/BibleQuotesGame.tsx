@@ -290,15 +290,15 @@ export default function BibleQuotesGame({
         <form onSubmit={handleTextSubmit} className="space-y-3">
           <motion.div
             animate={{
-              borderColor: showResult
-                ? isCorrect
-                  ? "rgba(34, 197, 94, 0.8)"
-                  : "rgba(239, 68, 68, 0.8)"
+              borderColor: isCorrect || showingAnswer
+                ? "rgba(34, 197, 94, 0.8)"
+                : showResult && !isCorrect
+                ? "rgba(239, 68, 68, 0.8)"
                 : "rgba(255, 255, 255, 0.5)",
-              backgroundColor: showResult
-                ? isCorrect
-                  ? "rgba(34, 197, 94, 0.2)"
-                  : "rgba(239, 68, 68, 0.2)"
+              backgroundColor: isCorrect || showingAnswer
+                ? "rgba(34, 197, 94, 0.2)"
+                : showResult && !isCorrect
+                ? "rgba(239, 68, 68, 0.2)"
                 : "rgba(255, 255, 255, 0.1)",
               scale: showResult ? (isCorrect ? [1, 1.02, 1] : [1, 0.98, 1]) : 1,
               x: showResult && !isCorrect ? [0, -5, 5, -5, 5, 0] : 0,
@@ -318,12 +318,14 @@ export default function BibleQuotesGame({
               placeholder="Введите ответ..."
               className="w-full px-4 py-3 rounded-xl bg-transparent text-white placeholder-white/50 border-2 focus:outline-none focus:border-white/80 transition-all text-sm md:text-base"
               style={{
-                border: showResult
-                  ? isCorrect
-                    ? "2px solid rgba(34, 197, 94, 0.8)"
-                    : "2px solid rgba(239, 68, 68, 0.8)"
+                border: isCorrect || showingAnswer
+                  ? "2px solid rgba(34, 197, 94, 0.8)"
+                  : showResult && !isCorrect
+                  ? "2px solid rgba(239, 68, 68, 0.8)"
                   : "2px solid rgba(255, 255, 255, 0.5)",
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+                boxShadow: isCorrect || showingAnswer
+                  ? "0 0 15px rgba(34, 197, 94, 0.3)"
+                  : "0 2px 8px rgba(0, 0, 0, 0.15)",
                 backdropFilter: "blur(10px)",
               }}
               autoComplete="off"
