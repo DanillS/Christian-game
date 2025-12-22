@@ -187,14 +187,17 @@ export default function RoundSelector() {
   };
 
   // Обработчик клика с эффектом волны
-  const handleCardClick = (roundId: string, event: React.MouseEvent<HTMLDivElement>) => {
-    const card = event.currentTarget
-    const ripple = document.createElement('div')
-    const rect = card.getBoundingClientRect()
-    const size = Math.max(rect.width, rect.height)
-    const x = event.clientX - rect.left - size / 2
-    const y = event.clientY - rect.top - size / 2
-    
+  const handleCardClick = (
+    roundId: string,
+    event: React.MouseEvent<HTMLDivElement>
+  ) => {
+    const card = event.currentTarget;
+    const ripple = document.createElement("div");
+    const rect = card.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const x = event.clientX - rect.left - size / 2;
+    const y = event.clientY - rect.top - size / 2;
+
     ripple.style.cssText = `
       position: absolute;
       width: ${size}px;
@@ -207,15 +210,15 @@ export default function RoundSelector() {
       animation: ripple 0.6s ease-out;
       will-change: transform, opacity;
       z-index: 1;
-    `
-    
-    card.style.position = 'relative'
-    card.appendChild(ripple)
-    
+    `;
+
+    card.style.position = "relative";
+    card.appendChild(ripple);
+
     setTimeout(() => {
-      ripple.remove()
-      router.push(`/round/${roundId}`)
-    }, 300)
+      ripple.remove();
+      router.push(`/round/${roundId}`);
+    }, 300);
   };
 
   return (
@@ -251,119 +254,122 @@ export default function RoundSelector() {
       >
         {/* Верхний ряд: 2 иконки с равномерным распределением */}
         <div className="flex items-center justify-evenly w-full mb-6 md:mb-8 lg:mb-10">
-          {rounds.filter(r => r.id !== 'bible-quotes').map((round) => (
-            <motion.div
-              key={round.id}
-              variants={cardVariants}
-              whileHover={{
-                scale: 1.05,
-                y: -3,
-                transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
-              }}
-              whileTap={{ scale: 0.95 }}
-              className="cursor-pointer relative flex flex-col items-center justify-center z-10 hover:z-20 float-animation"
-              style={{ 
-                willChange: "transform"
-              }}
-              onClick={(e) => handleCardClick(round.id, e)}
-            >
-              {/* App icon container - круглый, одинакового размера */}
-              <div
-                className="rounded-full flex items-center justify-center relative overflow-hidden mb-2 md:mb-3 flex-shrink-0 golden-glow deep-shadow"
-                style={{
-                  background: "rgba(255, 255, 255, 0.15)",
-                  backdropFilter: "blur(20px)",
-                  WebkitBackdropFilter: "blur(20px)",
-                  border: "2px solid rgba(255, 255, 255, 0.3)",
-                  height: '120px',
-                  width: '120px',
-                  transition: 'box-shadow 0.3s ease',
+          {rounds
+            .filter((r) => r.id !== "bible-quotes")
+            .map((round) => (
+              <motion.div
+                key={round.id}
+                variants={cardVariants}
+                whileHover={{
+                  scale: 1.05,
+                  y: -3,
+                  transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
                 }}
+                whileTap={{ scale: 0.95 }}
+                className="cursor-pointer relative flex flex-col items-center justify-center z-10 hover:z-20 float-animation"
+                style={{
+                  willChange: "transform",
+                }}
+                onClick={(e) => handleCardClick(round.id, e)}
               >
-                {imageErrors[round.id] ? (
-                  <span className="text-3xl md:text-4xl lg:text-5xl">
-                    {round.emoji}
-                  </span>
-                ) : (
-                  <SmartRoundIcon
-                    roundId={round.id}
-                    customIcon={customIcons[round.id]}
-                    defaultIcon={round.icon}
-                    emoji={round.emoji}
-                    alt={round.name}
-                    onError={() => handleImageError(round.id)}
-                    className="object-cover rounded-full"
-                    style={{ width: '116px', height: '116px' }}
-                  />
-                )}
-              </div>
+                {/* App icon container - круглый, одинакового размера */}
+                <div
+                  className="rounded-full flex items-center justify-center relative overflow-hidden mb-2 md:mb-3 flex-shrink-0 golden-glow deep-shadow"
+                  style={{
+                    background: "rgba(255, 255, 255, 0.15)",
+                    backdropFilter: "blur(20px)",
+                    WebkitBackdropFilter: "blur(20px)",
+                    border: "2px solid rgba(255, 255, 255, 0.3)",
+                    height: "120px",
+                    width: "120px",
+                    transition: "box-shadow 0.3s ease",
+                  }}
+                >
+                  {imageErrors[round.id] ? (
+                    <span className="text-3xl md:text-4xl lg:text-5xl">
+                      {round.emoji}
+                    </span>
+                  ) : (
+                    <SmartRoundIcon
+                      roundId={round.id}
+                      customIcon={customIcons[round.id]}
+                      defaultIcon={round.icon}
+                      emoji={round.emoji}
+                      alt={round.name}
+                      onError={() => handleImageError(round.id)}
+                      className="object-cover rounded-full"
+                      style={{ width: "116px", height: "116px" }}
+                    />
+                  )}
+                </div>
 
-              {/* App name - текст под иконкой */}
-              <h2 className="text-sm md:text-base font-medium text-white leading-tight text-center mt-1 px-1 break-words">
-                {round.name}
-              </h2>
-            </motion.div>
-          ))}
+                {/* App name - текст под иконкой */}
+                <h2 className="text-sm md:text-base font-medium text-white leading-tight text-center mt-1 px-1 break-words">
+                  {round.name}
+                </h2>
+              </motion.div>
+            ))}
         </div>
 
         {/* Нижний ряд: 1 иконка по центру (Библейские Цитаты) */}
         <div className="flex items-center justify-center w-full">
-          {rounds.filter(r => r.id === 'bible-quotes').map((round) => (
-            <motion.div
-              key={round.id}
-              variants={cardVariants}
-              whileHover={{
-                scale: 1.05,
-                y: -3,
-                transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
-              }}
-              whileTap={{ scale: 0.95 }}
-              className="cursor-pointer relative flex flex-col items-center justify-center z-10 hover:z-20 float-animation"
-              style={{ 
-                willChange: "transform"
-              }}
-              onClick={(e) => handleCardClick(round.id, e)}
-            >
-              {/* App icon container - круглый, одинакового размера */}
-              <div
-                className="rounded-full flex items-center justify-center relative overflow-hidden mb-2 md:mb-3 flex-shrink-0 golden-glow deep-shadow"
-                style={{
-                  background: "rgba(255, 255, 255, 0.15)",
-                  backdropFilter: "blur(20px)",
-                  WebkitBackdropFilter: "blur(20px)",
-                  border: "2px solid rgba(255, 255, 255, 0.3)",
-                  height: '120px',
-                  width: '120px',
-                  transition: 'box-shadow 0.3s ease',
+          {rounds
+            .filter((r) => r.id === "bible-quotes")
+            .map((round) => (
+              <motion.div
+                key={round.id}
+                variants={cardVariants}
+                whileHover={{
+                  scale: 1.05,
+                  y: -3,
+                  transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
                 }}
+                whileTap={{ scale: 0.95 }}
+                className="cursor-pointer relative flex flex-col items-center justify-center z-10 hover:z-20 float-animation"
+                style={{
+                  willChange: "transform",
+                }}
+                onClick={(e) => handleCardClick(round.id, e)}
               >
-                {imageErrors[round.id] ? (
-                  <span className="text-3xl md:text-4xl lg:text-5xl">
-                    {round.emoji}
-                  </span>
-                ) : (
-                  <SmartRoundIcon
-                    roundId={round.id}
-                    customIcon={customIcons[round.id]}
-                    defaultIcon={round.icon}
-                    emoji={round.emoji}
-                    alt={round.name}
-                    onError={() => handleImageError(round.id)}
-                    className="object-cover rounded-full"
-                    style={{ width: '116px', height: '116px' }}
-                  />
-                )}
-              </div>
+                {/* App icon container - круглый, одинакового размера */}
+                <div
+                  className="rounded-full flex items-center justify-center relative overflow-hidden mb-2 md:mb-3 flex-shrink-0 golden-glow deep-shadow"
+                  style={{
+                    background: "rgba(255, 255, 255, 0.15)",
+                    backdropFilter: "blur(20px)",
+                    WebkitBackdropFilter: "blur(20px)",
+                    border: "2px solid rgba(255, 255, 255, 0.3)",
+                    height: "120px",
+                    width: "120px",
+                    transition: "box-shadow 0.3s ease",
+                  }}
+                >
+                  {imageErrors[round.id] ? (
+                    <span className="text-3xl md:text-4xl lg:text-5xl">
+                      {round.emoji}
+                    </span>
+                  ) : (
+                    <SmartRoundIcon
+                      roundId={round.id}
+                      customIcon={customIcons[round.id]}
+                      defaultIcon={round.icon}
+                      emoji={round.emoji}
+                      alt={round.name}
+                      onError={() => handleImageError(round.id)}
+                      className="object-cover rounded-full"
+                      style={{ width: "116px", height: "116px" }}
+                    />
+                  )}
+                </div>
 
-              {/* App name - текст под иконкой */}
-              <h2 className="text-sm md:text-base font-medium text-white leading-tight text-center mt-1 px-1 break-words">
-                {round.name}
-              </h2>
-            </motion.div>
-          ))}
+                {/* App name - текст под иконкой */}
+                <h2 className="text-sm md:text-base font-medium text-white leading-tight text-center mt-1 px-1 break-words">
+                  {round.name}
+                </h2>
+              </motion.div>
+            ))}
         </div>
       </motion.div>
-
     </div>
   );
 }
