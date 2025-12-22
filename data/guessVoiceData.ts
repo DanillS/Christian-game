@@ -54,26 +54,7 @@ export const guessVoiceData: any[] = [
   {
     audioUrl: "/audio/voices/file8.mp3",
     originalAudioUrl: "/audio/voices/file8_original.mp3", // Добавьте оригинальный файл
-    options: [
-      "Витя",
-      "Маша",
-      "Данил Я",
-      "Даша",
-      "Лиза Б",
-      "Тима",
-      "Тима",
-      "Тима",
-      "Тима",
-      "Тима",
-      "Тима",
-      "Тима",
-      "Тима",
-      "Тима",
-      "Тима",
-      "Тима",
-      "Тима",
-      "Тима",
-    ],
+    options: ['dsf'],
     correctAnswer: "Маша",
   },
   {

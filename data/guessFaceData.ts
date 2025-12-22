@@ -40,7 +40,7 @@ export const guessFaceData: any[] = [
     fullImage: "/images/faces/file17.png", // Полная фотография (откуда брали часть)
     parts: ["nose", "eyes", "mouth", "hands", "full"],
     options: ["Александр 1-й", "Александр 2-й", "Витя", "Тима"],
-    correctAnswer:["Александр 1-й", 'Саня', 'Владелец', 'Нина...', 'Санчес', "Саша", 'Александр'],
+    correctAnswer:["Александр 1-й", 'Саня', 'Владелец', 'Нина...', 'Санчес', "Саша", 'Александр', "Степанов"],
   },
   {
     image: "/images/faces/file11.png", // Фотография части тела
@@ -54,7 +54,7 @@ export const guessFaceData: any[] = [
     fullImage: "/images/faces/file16.png", // Полная фотография (откуда брали часть)
     parts: ["nose", "eyes", "mouth", "hands", "full"],
     options: ["Филипп", "Илья", "Саня", "Кирилл"],
-    correctAnswer: ["Саня", 'Александр 2-й', 'Вотяк'],
+    correctAnswer: ["Саня", 'Александр 2-й', 'Вотяк', "Петров", "Саша", "Александр"],
   },
   {
     image: "/images/faces/file14.png", // Фотография части тела
@@ -68,14 +68,273 @@ export const guessFaceData: any[] = [
     fullImage: "/images/faces/file2.png", // Полная фотография (откуда брали часть)
     parts: ["nose", "eyes", "mouth", "hands", "full"],
     options: ["Дарья", "Полина", "Таня", "Руфа"],
-    correctAnswer: ["Даша", 'Дарья', 'Дашуля', 'Мазда 6-я', 'Дашка'],
+    correctAnswer: ["Даша", 'Дарья', 'Дашуля', 'Мазда 6', 'Дашка'],
   },
   {
     image: "/images/faces/file15.png", // Фотография части тела
     fullImage: "/images/faces/file10.png", // Полная фотография (откуда брали часть)
     parts: ["nose", "eyes", "mouth", "hands", "full"],
-    options: ["Света", "Лена", "Вика", "Саня", "Петя", "Витя"],
-    correctAnswer: ["Саня", 'Александр 3-й', 'Саша'],
+    options: [],
+    correctAnswer: ["Саня", 'Александр 3-й', 'Саша', "Яковлев"],
+  },
+  {
+    image: "/images/faces/file76.png", // Фотография части тела
+    fullImage: "/images/faces/file30.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [1],
+    correctAnswer: ["Саня", 'Александр 2-й', 'Вотяк', "Петров", "Саша", "Александр"],
+  },
+  {
+    image: "/images/faces/file70.png", // Фотография части тела
+    fullImage: "/images/faces/file81.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [2],
+    correctAnswer: ["Веня", 'Веньямин', "Ваня", 'Пупсик'],
+  },
+  {
+    image: "/images/faces/file62.png", // Фотография части тела
+    fullImage: "/images/faces/file47.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [3],
+    correctAnswer: ["Александр 1-й", 'Саня', 'Владелец', 'Нина...', 'Санчес', "Саша", 'Александр', "Степанов"],
+  },
+  {
+    image: "/images/faces/file40.png", // Фотография части тела
+    fullImage: "/images/faces/file35.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [4],
+    correctAnswer: ["Елизавета", 'Лиза'],
+  },
+  {
+    image: "/images/faces/file71.png", // Фотография части тела
+    fullImage: "/images/faces/file54.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [5],
+    correctAnswer: ["Аня", 'Анна', "Яковлева"],
+  },
+  {
+    image: "/images/faces/file80.png", // Фотография части тела
+    fullImage: "/images/faces/file86.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [6],
+    correctAnswer: ["Веня", 'Веньямин', "Ваня", 'Пупсик'],
+  },
+  {
+    image: "/images/faces/file34.png", // Фотография части тела
+    fullImage: "/images/faces/file37.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [7],
+    correctAnswer: ["Саня", 'Александр 2-й', 'Вотяк', "Петров", "Саша", "Александр"],
+  },
+  {
+    image: "/images/faces/file22.png", // Фотография части тела
+    fullImage: "/images/faces/file85.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [8],
+    correctAnswer: ["Данил", 'Денчик', "Яковлев", "Даниил", "Даня"],
+  },
+  {
+    image: "/images/faces/file26.png", // Фотография части тела
+    fullImage: "/images/faces/file83.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [9],
+    correctAnswer: ["Дина", 'Бобренок старший', "Динчик", "Диночка"],
+  },
+  {
+    image: "/images/faces/file58.png", // Фотография части тела
+    fullImage: "/images/faces/file74.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [10],
+    correctAnswer: ["Даша", 'Дарья', 'Дашуля', 'Мазда 6', 'Дашка'],
+  },
+  {
+    image: "/images/faces/file51.png", // Фотография части тела
+    fullImage: "/images/faces/file55.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [11],
+    correctAnswer: ["Илья", 'Албанец', "Илюша"],
+  },
+  {
+    image: "/images/faces/file43.png", // Фотография части тела
+    fullImage: "/images/faces/file42.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [12],
+    correctAnswer: ["Даша", 'Дарья', 'Дашуля', 'Мазда 6', 'Дашка'],
+  },
+  {
+    image: "/images/faces/file50.png", // Фотография части тела
+    fullImage: "/images/faces/file39.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [13],
+    correctAnswer: ["Этиенн", 'Тима', "Африканец", "и много других аналогий", "ок, вода", "где-то смеется Саня Петров и Веня"],
+  },
+  {
+    image: "/images/faces/file77.png", // Фотография части тела
+    fullImage: "/images/faces/file68.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [14],
+    correctAnswer: ["Артем", 'Шмаков'],
+  },
+  {
+    image: "/images/faces/file21.png", // Фотография части тела
+    fullImage: "/images/faces/file33.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [15],
+    correctAnswer: ["Виктор", 'Витя', "Б.д.к", "Викторио"],
+  },
+  {
+    image: "/images/faces/file75.png", // Фотография части тела
+    fullImage: "/images/faces/file88.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [16],
+    correctAnswer: ["Петя", 'Шмаков', "Петруша", "Петр"],
+  },
+  {
+    image: "/images/faces/file64.png", // Фотография части тела
+    fullImage: "/images/faces/file90.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [17],
+    correctAnswer: ["Тима", 'Тимофей', 'Черныш', 'Албанстрой', 'Тимоша', "Тимоха"],
+  },
+  {
+    image: "/images/faces/file36.png", // Фотография части тела
+    fullImage: "/images/faces/file45.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [18],
+    correctAnswer: ["Филипп", 'Филя', 'Филка', 'Филип', 'Фелип']
+    ,
+  },
+  {
+    image: "/images/faces/file41.png", // Фотография части тела
+    fullImage: "/images/faces/file63.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [19],
+    correctAnswer: ["Веня", 'Веньямин', "Ваня", 'Пупсик'],
+  },
+  {
+    image: "/images/faces/file87.png", // Фотография части тела
+    fullImage: "/images/faces/file23.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [20],
+    correctAnswer: ["Саня", 'Александр 3-й', 'Саша', "Яковлев"]
+    ,
+  },
+  {
+    image: "/images/faces/file72.png", // Фотография части тела
+    fullImage: "/images/faces/file52.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [21],
+    correctAnswer: ["Филипп", 'Филя', 'Филка', 'Филип', 'Фелип']
+    ,
+  },
+  {
+    image: "/images/faces/file78.png", // Фотография части тела
+    fullImage: "/images/faces/file31.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [22],
+    correctAnswer: ["Филипп", 'Филя', 'Филка', 'Филип', 'Фелип']
+    ,
+  },
+  {
+    image: "/images/faces/file65.png", // Фотография части тела
+    fullImage: "/images/faces/file69.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [23],
+    correctAnswer: ["Софа", 'Софья', 'Степанова'],
+  },
+  {
+    image: "/images/faces/file67.png", // Фотография части тела
+    fullImage: "/images/faces/file44.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [24],
+    correctAnswer: ["Данил", 'Даня', 'Степанов', 'Денчик'],
+  },
+  {
+    image: "/images/faces/file59.png", // Фотография части тела
+    fullImage: "/images/faces/file46.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [25],
+    correctAnswer: ["Полина", 'Полька', 'Степанова', 'Полинчик', "Апполинария"],
+  },
+  {
+    image: "/images/faces/file25.png", // Фотография части тела
+    fullImage: "/images/faces/file32.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [26],
+    correctAnswer: ["Виктор", 'Витя', "Б.д.к", "Викторио"]
+    ,
+  },
+  {
+    image: "/images/faces/file27.png", // Фотография части тела
+    fullImage: "/images/faces/file79.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [27],
+    correctAnswer: ["Илья", 'Албанец', "Илюша"]
+    ,
+  },
+  {
+    image: "/images/faces/file89.png", // Фотография части тела
+    fullImage: "/images/faces/file28.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [28],
+    correctAnswer: ["Артем", 'Шмаков']
+    ,
+  },
+  {
+    image: "/images/faces/file57.png", // Фотография части тела
+    fullImage: "/images/faces/file38.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [29],
+    correctAnswer: ["Андрей", "Балобан", "а че не так то", "Эндрю"]
+    ,
+  },
+  {
+    image: "/images/faces/file60.png", // Фотография части тела
+    fullImage: "/images/faces/file61.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [30],
+    correctAnswer: ["Таня", 'Бобренок младший', "Танюша", "Танька", "Татьяна"]
+    ,
+  },
+  {
+    image: "/images/faces/file73.png", // Фотография части тела
+    fullImage: "/images/faces/file24.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [31],
+    correctAnswer: ["Данил", 'Денчик', "Яковлев", "Даниил", "Даня"]
+    ,
+  },
+  {
+    image: "/images/faces/file84.png", // Фотография части тела
+    fullImage: "/images/faces/file29.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [32],
+    correctAnswer: ["Даниил", 'Синоптик', 'Даня', 'Данил']
+    ,
+  },
+  {
+    image: "/images/faces/file49.png", // Фотография части тела
+    fullImage: "/images/faces/file82.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [33],
+    correctAnswer: ["Андрей", "Балобан", "а че не так то", "Эндрю"]
+    ,
+  },
+  {
+    image: "/images/faces/file66.png", // Фотография части тела
+    fullImage: "/images/faces/file56.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [34],
+    correctAnswer: ["Веня", 'Веньямин', "Ваня", 'Пупсик']
+    ,
+  },
+  {
+    image: "/images/faces/file53.png", // Фотография части тела
+    fullImage: "/images/faces/file48.png", // Полная фотография (откуда брали часть)
+    parts: ["nose", "eyes", "mouth", "hands", "full"],
+    options: [35],
+    correctAnswer: ["Веня", 'Веньямин', "Ваня", 'Пупсик']
+    ,
   },
   // Добавьте больше вопросов здесь
 ];
