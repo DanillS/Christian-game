@@ -54,7 +54,7 @@ export const guessFaceData: any[] = [
     fullImage: "/images/faces/file16.png", // Полная фотография (откуда брали часть)
     parts: ["nose", "eyes", "mouth", "hands", "full"],
     options: ["Филипп", "Илья", "Саня", "Кирилл"],
-    correctAnswer: ["Саня", 'Александр 2-й', 'Вотяк', "Петров", "Саша", "Александр"],
+    correctAnswer: ["Саня", 'Вотяк', "Петров", "Саша", "Александр"],
   },
   {
     image: "/images/faces/file14.png", // Фотография части тела
@@ -75,21 +75,21 @@ export const guessFaceData: any[] = [
     fullImage: "/images/faces/file10.png", // Полная фотография (откуда брали часть)
     parts: ["nose", "eyes", "mouth", "hands", "full"],
     options: [],
-    correctAnswer: ["Саня", 'Александр 3-й', 'Саша', "Яковлев"],
+    correctAnswer: ["Саня", 'Саша', "Яковлев"],
   },
   {
     image: "/images/faces/file76.png", // Фотография части тела
     fullImage: "/images/faces/file30.png", // Полная фотография (откуда брали часть)
     parts: ["nose", "eyes", "mouth", "hands", "full"],
     options: [1],
-    correctAnswer: ["Саня", 'Александр 2-й', 'Вотяк', "Петров", "Саша", "Александр"],
+    correctAnswer: ["Саня",  'Вотяк', "Петров", "Саша", "Александр"],
   },
   {
     image: "/images/faces/file70.png", // Фотография части тела
     fullImage: "/images/faces/file81.png", // Полная фотография (откуда брали часть)
     parts: ["nose", "eyes", "mouth", "hands", "full"],
     options: [2],
-    correctAnswer: ["Веня", 'Веньямин', "Ваня", 'Пупсик'],
+    correctAnswer: ["Веня", 'Веньямин', "Ваня", 'Перекуп'],
   },
   {
     image: "/images/faces/file62.png", // Фотография части тела
@@ -117,14 +117,14 @@ export const guessFaceData: any[] = [
     fullImage: "/images/faces/file86.png", // Полная фотография (откуда брали часть)
     parts: ["nose", "eyes", "mouth", "hands", "full"],
     options: [6],
-    correctAnswer: ["Веня", 'Веньямин', "Ваня", 'Пупсик'],
+    correctAnswer: ["Веня", 'Веньямин', "Ваня", 'Перекуп'],
   },
   {
     image: "/images/faces/file34.png", // Фотография части тела
     fullImage: "/images/faces/file37.png", // Полная фотография (откуда брали часть)
     parts: ["nose", "eyes", "mouth", "hands", "full"],
     options: [7],
-    correctAnswer: ["Саня", 'Александр 2-й', 'Вотяк', "Петров", "Саша", "Александр"],
+    correctAnswer: ["Саня",  'Вотяк', "Петров", "Саша", "Александр"],
   },
   {
     image: "/images/faces/file22.png", // Фотография части тела
@@ -209,14 +209,14 @@ export const guessFaceData: any[] = [
     fullImage: "/images/faces/file63.png", // Полная фотография (откуда брали часть)
     parts: ["nose", "eyes", "mouth", "hands", "full"],
     options: [19],
-    correctAnswer: ["Веня", 'Веньямин', "Ваня", 'Пупсик'],
+    correctAnswer: ["Веня", 'Веньямин', "Ваня", 'Перекуп'],
   },
   {
     image: "/images/faces/file87.png", // Фотография части тела
     fullImage: "/images/faces/file23.png", // Полная фотография (откуда брали часть)
     parts: ["nose", "eyes", "mouth", "hands", "full"],
     options: [20],
-    correctAnswer: ["Саня", 'Александр 3-й', 'Саша', "Яковлев"]
+    correctAnswer: ["Саня",  'Саша', "Яковлев"]
     ,
   },
   {
@@ -325,7 +325,7 @@ export const guessFaceData: any[] = [
     fullImage: "/images/faces/file56.png", // Полная фотография (откуда брали часть)
     parts: ["nose", "eyes", "mouth", "hands", "full"],
     options: [34],
-    correctAnswer: ["Веня", 'Веньямин', "Ваня", 'Пупсик']
+    correctAnswer: ["Веня", 'Веньямин', "Ваня", 'Перекуп']
     ,
   },
   {
@@ -333,7 +333,7 @@ export const guessFaceData: any[] = [
     fullImage: "/images/faces/file48.png", // Полная фотография (откуда брали часть)
     parts: ["nose", "eyes", "mouth", "hands", "full"],
     options: [35],
-    correctAnswer: ["Веня", 'Веньямин', "Ваня", 'Пупсик']
+    correctAnswer: ["Веня", 'Веньямин', "Ваня", 'Перекуп']
     ,
   },
   // Добавьте больше вопросов здесь

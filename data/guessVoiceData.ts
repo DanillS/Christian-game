@@ -61,13 +61,13 @@ export const guessVoiceData: any[] = [
     audioUrl: "/audio/voices/file8.mp3",
     originalAudioUrl: "/audio/voices/file8_original.mp3", // Добавьте оригинальный файл
     options: ['dsf'],
-    correctAnswer: "Маша",
+    correctAnswer: ["Маша", 'Мария', 'Мариямь'],
   },
   {
     audioUrl: "/audio/voices/file9.mp3",
     originalAudioUrl: "/audio/voices/file9_original.mp3", // Добавьте оригинальный файл
     options: ["Коля", "Филипп", "Руфа", "Данил Я", "Лиза Б"],
-    correctAnswer: ["Елизавета", 'не крутите мяч пж', 'Лизонька', 'Элиза', 'Лиз', 'Лиза']
+    correctAnswer: ["Елизавета", 'не крутите мяч пж', 'Лизонька', 'Лиз', 'Лиза']
     ,
   },
   {
@@ -75,6 +75,62 @@ export const guessVoiceData: any[] = [
     originalAudioUrl: "/audio/voices/file10_original.mp4", // Добавьте оригинальный файл
     options: ["Руфа", "Филипп", "Сашка", "Данил Я", "Лиза Б"],
     correctAnswer: ["Александр 1-й", 'Саня', 'Владелец', 'Нина...', 'Санчес', "Саша", 'Александр', "Степанов"]
+    ,
+  },
+  {
+    audioUrl: "/audio/voices/file11.mp3",
+    originalAudioUrl: "/audio/voices/file11_original.mp4", // Добавьте оригинальный файл
+    options: ["Руфа", "Филипп", "Сашка", "Данил Я", "Лиза Б"],
+    correctAnswer: ["Таня", 'Бобренок младший', "Танюша", "Танька", "Татьяна"]
+    ,
+  },
+  {
+    audioUrl: "/audio/voices/file12.mp3",
+    originalAudioUrl: "/audio/voices/file12_original.mp3", // Добавьте оригинальный файл
+    options: ["Руфа", "Филипп", "Сашка", "Данил Я", "Лиза Б"],
+    correctAnswer: ["Руфа", 'хочу Феррари', 'Руфь', 'Руфина']
+    ,
+  },
+  {
+    audioUrl: "/audio/voices/file13.mp3",
+    originalAudioUrl: "/audio/voices/file13_original.mp4", // Добавьте оригинальный файл
+    options: ["Руфа", "Филипп", "Сашка", "Данил Я", "Лиза Б"],
+    correctAnswer: ["Андрей", "Балобан", "а че не так то", "Эндрю"]
+    ,
+  },
+  {
+    audioUrl: "/audio/voices/file14.mp3",
+    originalAudioUrl: "/audio/voices/file14_original.mp3", // Добавьте оригинальный файл
+    options: ["Руфа", "Филипп", "Сашка", "Данил Я", "Лиза Б"],
+    correctAnswer: ["Лена", 'Елена', "Ленка"]
+    ,
+  },
+  {
+    audioUrl: "/audio/voices/file15.mp3",
+    originalAudioUrl: "/audio/voices/file15_original.mp3", // Добавьте оригинальный файл
+    options: ["Руфа", "Филипп", "Сашка", "Данил Я", "Лиза Б"],
+    correctAnswer: ["Лиза", "Яковлева", "Елизавета"]
+    ,
+  },
+  {
+    audioUrl: "/audio/voices/file16.mp3",
+    originalAudioUrl: "/audio/voices/file16_original.mp3", // Добавьте оригинальный файл
+    options: ["Руфа", "Филипп", "Сашка", "Данил Я", "Лиза Б"],
+    correctAnswer: ["Юлия", "Шмакова", "Юлия Шмакова", "Юля"]
+    ,
+  },
+  {
+    audioUrl: "/audio/voices/file17.mp3",
+    originalAudioUrl: "/audio/voices/file17_original.mp3", // Добавьте оригинальный файл
+    options: ["Руфа", "Филипп", "Сашка", "Данил Я", "Лиза Б"],
+    correctAnswer: ["Петя", 'Шмаков', "Петруша", "Петр"]
+    ,
+  },
+  {
+    audioUrl: "/audio/voices/file18.mp3",
+    originalAudioUrl: "/audio/voices/file18_original.mp4", // Добавьте оригинальный файл
+    options: ["Руфа", "Филипп", "Сашка", "Данил Я", "Лиза Б"],
+    correctAnswer: ["Веня", 'Веньямин', "Ваня", 'Перекуп']
     ,
   },
   // Добавьте больше вопросов здесь
