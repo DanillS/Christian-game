@@ -328,13 +328,5 @@ export const guessFaceData: any[] = [
     correctAnswer: ["Веня", 'Веньямин', "Ваня", 'Перекуп']
     ,
   },
-  {
-    image: "/images/faces/file53.png", // Фотография части тела
-    fullImage: "/images/faces/file48.png", // Полная фотография (откуда брали часть)
-    parts: ["nose", "eyes", "mouth", "hands", "full"],
-    options: [35],
-    correctAnswer: ["Веня", 'Веньямин', "Ваня", 'Перекуп']
-    ,
-  },
   // Добавьте больше вопросов здесь
 ];
