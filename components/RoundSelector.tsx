@@ -15,7 +15,7 @@ const rounds = [
   },
   {
     id: "bible-quotes",
-    name: "Библейские Цитаты",
+    name: "Библейские Вопросы",
     description: "Продолжи цитату",
     icon: "/icons/bible-quotes",
     emoji: "📖",
@@ -311,7 +311,7 @@ export default function RoundSelector() {
             ))}
         </div>
 
-        {/* Нижний ряд: 1 иконка по центру (Библейские Цитаты) */}
+        {/* Нижний ряд: 1 иконка по центру (Библейские Вопросы) */}
         <div className="flex items-center justify-center w-full">
           {rounds
             .filter((r) => r.id === "bible-quotes")

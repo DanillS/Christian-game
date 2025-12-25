@@ -284,7 +284,7 @@ async function processUpdate(update: TelegramUpdate) {
           );
           return;
         }
-        if (text === "📖 Библейские цитаты") {
+        if (text === "📖 Библейские вопросы") {
           state.step = "waiting_file";
           state.data.roundId = "bible-quotes";
           await sendTelegramMessage(
@@ -1884,7 +1884,7 @@ function getRoundIconKeyboard() {
   return {
     keyboard: [
       [{ text: "👤 Угадай лицо" }, { text: "🎤 Угадай голос" }],
-      [{ text: "📖 Библейские цитаты" }, { text: "❌ Отмена" }],
+      [{ text: "📖 Библейские вопросы" }, { text: "❌ Отмена" }],
     ],
     resize_keyboard: true,
     one_time_keyboard: false,

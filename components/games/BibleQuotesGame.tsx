@@ -191,7 +191,7 @@ export default function BibleQuotesGame({
         {!onBack && <div></div>}
 
         <h2 className="text-lg md:text-xl font-bold text-center text-white flex-1">
-          📖 Библейские Цитаты 🎄
+          📖 Библейские Вопросы 🎄
         </h2>
 
         <div className="w-10 md:w-12"></div>

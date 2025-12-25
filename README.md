@@ -183,6 +183,6 @@ create table public.bible_quote_questions (
 2. **"Угадай лицо"** — фото в `public/images/faces/`, вопросы в `data/guessFaceData.ts`.
 3. **"Угадай мелодию"** — MP3 в `public/audio/melodies/`, данные в `data/guessMelodyData.ts`.
 4. **"Угадай, кто говорит"** — MP3 в `public/audio/voices/`, вопросы в `data/guessVoiceData.ts`.
-5. **"Библейские цитаты"** — редактируйте `data/bibleQuotesData.ts`.
+5. **"Библейские вопросы"** — редактируйте `data/bibleQuotesData.ts`.
 
 Во всех случаях игра сначала пытается получить данные из Supabase, а при любой ошибке автоматически возвращается к содержимому из `data/*.ts` и файлов `public/`.

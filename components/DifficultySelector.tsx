@@ -15,7 +15,7 @@ const difficulties = [
 
 const roundNames: Record<string, string> = {
   "guess-face": "Угадай Лицо",
-  "bible-quotes": "Библейские Цитаты",
+  "bible-quotes": "Библейские Вопросы",
   "guess-voice": "Угадай, Кто Говорит",
 };
 
